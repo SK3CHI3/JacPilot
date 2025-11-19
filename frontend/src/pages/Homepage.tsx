@@ -27,7 +27,7 @@ function Homepage() {
               Join thousands of developers mastering Jaseci with JacPilot
             </p>
             <Link
-              to="/dashboard"
+              to="/signup"
               className="inline-block px-10 py-5 bg-white text-[#FF6B35] rounded-lg font-semibold text-lg transition-all transform hover:scale-105 hover:shadow-xl shadow-lg"
             >
               Get Started Free

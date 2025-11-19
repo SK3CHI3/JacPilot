@@ -37,8 +37,8 @@
 
 @layer base {
   body {
-    background-color: var(--color-dark-bg);
-    color: white;
+    background-color: white;
+    color: #1a1a1a;
     font-family: system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     margin: 0;

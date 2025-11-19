@@ -95,44 +95,50 @@ function AnimatedCodeSection() {
   }, [currentCharIndex, currentLineIndex, currentExample, currentCode])
 
   return (
-    <section className="container mx-auto px-6 py-16">
-      <div className="max-w-5xl mx-auto">
+    <section 
+      className="container mx-auto px-6 py-16"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.02) 0%, rgba(255, 210, 63, 0.02) 100%)'
+      }}
+    >
+      <div className="max-w-6xl mx-auto">
         <div 
           className="rounded-3xl overflow-hidden shadow-2xl"
           style={{
-            background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)'
+            background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)',
+            aspectRatio: '16/9'
           }}
         >
-          <div className="p-8">
+          <div className="p-12 h-full flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-8">
               <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Terminal className="w-6 h-6 text-white" />
+                <Terminal className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white">
+                <h3 className="text-3xl font-bold text-white">
                   {currentCode.title}
                 </h3>
-                <p className="text-white/80 text-sm">
+                <p className="text-white/80 text-base">
                   See Jaseci in action
                 </p>
               </div>
             </div>
 
             {/* Code Editor Window */}
-            <div className="bg-gray-900 rounded-2xl p-6 shadow-inner min-h-[300px] font-mono text-sm">
+            <div className="bg-gray-900 rounded-2xl p-8 shadow-inner flex-1 font-mono text-base">
               <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-700">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="ml-4 text-gray-400 text-xs">example.jac</span>
+                <span className="ml-4 text-gray-400 text-sm">example.jac</span>
               </div>
               
-              <pre className="text-gray-100 whitespace-pre-wrap">
-                <code>
+              <pre className="text-gray-100 whitespace-pre-wrap h-full flex items-start">
+                <code className="text-lg">
                   {displayedCode}
                   <span 
-                    className="inline-block w-2 h-4 bg-white ml-1 align-middle"
+                    className="inline-block w-3 h-5 bg-white ml-1 align-middle"
                     style={{ opacity: showCursor ? 1 : 0 }}
                   ></span>
                 </code>
@@ -140,7 +146,7 @@ function AnimatedCodeSection() {
             </div>
 
             {/* Progress Indicators */}
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex justify-center gap-2 mt-8">
               {codeExamples.map((_, idx) => (
                 <div
                   key={idx}

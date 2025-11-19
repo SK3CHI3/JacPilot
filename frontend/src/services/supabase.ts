@@ -9,27 +9,97 @@ import { createClient } from '@supabase/supabase-js'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn('Supabase credentials not configured. Some features may not work.')
+let supabaseClient: any = null
+
+if (SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL !== '' && SUPABASE_ANON_KEY !== '') {
+  try {
+    // Validate URL format
+    try {
+      new URL(SUPABASE_URL)
+    } catch {
+      throw new Error('Invalid Supabase URL format')
+    }
+    supabaseClient = createClient<any>(SUPABASE_URL, SUPABASE_ANON_KEY)
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error)
+    supabaseClient = createMockClient()
+  }
+} else {
+  console.warn('Supabase credentials not configured. Using mock client. Some features may not work.')
+  supabaseClient = createMockClient()
 }
 
-// Using any for now - will be properly typed when database schema is finalized
-export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_ANON_KEY)
+function createMockClient() {
+  const mockError = { message: 'Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.' }
+
+  const mockQueryBuilder = {
+    select: () => mockQueryBuilder,
+    insert: () => Promise.resolve({ data: null, error: mockError }),
+    update: () => mockQueryBuilder,
+    delete: () => mockQueryBuilder,
+    eq: () => mockQueryBuilder,
+    order: () => mockQueryBuilder,
+    limit: () => mockQueryBuilder,
+    single: () => Promise.resolve({ data: null, error: mockError }),
+    then: (onResolve: any) => Promise.resolve({ data: null, error: mockError }).then(onResolve),
+  }
+
+  return {
+    auth: {
+      signInWithPassword: () => Promise.resolve({ data: null, error: mockError }),
+      signUp: () => Promise.resolve({ data: null, error: mockError }),
+      signOut: () => Promise.resolve({ error: null }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+    },
+    from: () => mockQueryBuilder,
+  }
+}
+
+export const supabase = supabaseClient
 
 /**
  * Auth helpers
  */
 export const auth = {
   signIn: async (email: string, password: string) => {
-    return await supabase.auth.signInWithPassword({ email, password })
+    try {
+      return await supabase.auth.signInWithPassword({ email, password })
+    } catch (error: any) {
+      console.error('Sign in error:', error)
+      return {
+        data: null,
+        error: {
+          message: error?.message || 'Failed to sign in. Please check your credentials.',
+        },
+      }
+    }
   },
   
   signUp: async (email: string, password: string, metadata?: Record<string, any>) => {
-    return await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: metadata },
-    })
+    try {
+      const result = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: metadata },
+      })
+      
+      // Log the full response for debugging
+      if (result.error) {
+        console.error('Supabase signup error:', result.error)
+      }
+      
+      return result
+    } catch (error: any) {
+      console.error('Sign up exception:', error)
+      return {
+        data: null,
+        error: {
+          message: error?.message || 'Failed to create account. Please try again.',
+          status: error?.status || 500,
+        },
+      }
+    }
   },
   
   signOut: async () => {
@@ -54,6 +124,14 @@ export const users = {
       .from('users')
       .select('*')
       .eq('id', id)
+      .single()
+  },
+  
+  getByAuthUserId: async (authUserId: string) => {
+    return await supabase
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', authUserId)
       .single()
   },
   

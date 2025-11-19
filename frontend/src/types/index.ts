@@ -59,10 +59,12 @@ export interface Question {
   id: string
   type: 'multiple_choice' | 'free_text' | 'coding'
   question: string
+  text?: string // Alternative to question
   options?: string[] // For multiple choice
   correct_answer: string
   explanation?: string
   max_score: number
+  starter_code?: string // For coding questions
 }
 
 export interface QuizAttempt {

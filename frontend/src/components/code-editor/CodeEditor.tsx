@@ -38,7 +38,8 @@ export function CodeEditor({ exercise, onSubmit }: CodeEditorProps) {
         const results = response.data as any
         
         // Process test results
-        const processedResults: TestResult[] = exercise.test_cases.map((testCase, index) => {
+        const testCases = exercise.test_cases || []
+        const processedResults: TestResult[] = testCases.map((testCase, index) => {
           const result = results.test_results?.[index] || results
           return {
             testCase,
@@ -73,9 +74,9 @@ export function CodeEditor({ exercise, onSubmit }: CodeEditorProps) {
         <h2 className="text-2xl font-bold mb-2">{exercise.title}</h2>
         <p className="text-gray-400 mb-4">{exercise.instructions}</p>
         <div className="flex items-center gap-2 text-sm text-gray-400">
-          <span>Difficulty: {exercise.difficulty}/5</span>
+          <span>Difficulty: {exercise.difficulty || 1}/5</span>
           <span>•</span>
-          <span>{exercise.test_cases.length} test cases</span>
+          <span>{(exercise.test_cases || []).length} test cases</span>
         </div>
       </Card>
 

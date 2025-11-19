@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { UserProvider } from './contexts/UserContext'
 import Homepage from './pages/Homepage'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import LessonViewer from './pages/LessonViewer'
 import QuizPage from './pages/QuizPage'
@@ -14,6 +16,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Homepage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/lessons/:id" element={<LessonViewer />} />
           <Route path="/quiz/:id" element={<QuizPage />} />

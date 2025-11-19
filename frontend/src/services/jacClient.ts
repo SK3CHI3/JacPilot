@@ -1,9 +1,10 @@
 /**
  * Jac Client Service
- * Handles communication with Jaseci backend via Spawn() calls
+ * Handles communication with Jaseci backend via walker API calls
+ * Updated for jaclang/jac_cloud API format
  */
 
-import type { SpawnContext, SpawnResult, WalkerResponse } from '../types'
+import type { WalkerResponse } from '../types'
 
 // Configuration - will be set via environment variables
 const JASECI_API_URL = import.meta.env.VITE_JASECI_API_URL || 'http://localhost:8000'
@@ -11,9 +12,10 @@ const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || ''
 
 /**
  * Spawn a walker on the Jaseci backend
+ * Uses the new jaclang API format: /walker/{walker_name}
  * @param walkerName - Name of the walker to spawn
- * @param ctx - Context object to pass to the walker
- * @param nodeId - Optional node ID to spawn from
+ * @param ctx - Context object to pass to the walker (as request body)
+ * @param nodeId - Optional node ID to spawn from (as path parameter)
  * @returns Promise with walker response
  */
 export async function spawnWalker<T = any>(
@@ -22,37 +24,65 @@ export async function spawnWalker<T = any>(
   nodeId?: string
 ): Promise<WalkerResponse<T>> {
   try {
-    const spawnContext: SpawnContext = {
-      walker: walkerName,
-      ctx,
-      ...(nodeId && { node: nodeId }),
+    // Build the endpoint URL
+    let endpoint = `${JASECI_API_URL}/walker/${walkerName}`
+    if (nodeId) {
+      endpoint = `${JASECI_API_URL}/walker/${walkerName}/${nodeId}`
     }
 
-    const response = await fetch(`${JASECI_API_URL}/js/walker_spawn`, {
+    // Prepare headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    
+    // Add authorization if API key is provided
+    if (JASECI_API_KEY) {
+      headers['Authorization'] = `Bearer ${JASECI_API_KEY}`
+    }
+
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(JASECI_API_KEY && { Authorization: `Bearer ${JASECI_API_KEY}` }),
-      },
-      body: JSON.stringify(spawnContext),
+      headers,
+      body: JSON.stringify(ctx),
     })
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      const errorText = await response.text().catch(() => 'Unknown error')
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
     }
 
-    const result: SpawnResult<T> = await response.json()
+    const result = await response.json()
 
-    if (!result.success) {
+    // The new API format returns data directly or in a specific structure
+    // Adjust based on actual API response format
+    if (result && typeof result === 'object') {
+      // Check if it's an error response
+      if ('error' in result || 'detail' in result) {
+        return {
+          success: false,
+          error: result.error || result.detail || 'Walker execution failed',
+        }
+      }
+      
+      // Check if result has a 'report' field (old format) or is the data directly
+      if ('report' in result) {
+        const report = result.report
+        return {
+          success: true,
+          data: (Array.isArray(report) ? report[0] : report) as T,
+        }
+      }
+      
+      // Assume the result is the data directly
       return {
-        success: false,
-        error: result.error || 'Walker execution failed',
+        success: true,
+        data: result as T,
       }
     }
 
     return {
       success: true,
-      data: (Array.isArray(result.report) ? result.report[0] : result.report) as T,
+      data: result as T,
     }
   } catch (error) {
     console.error('Error spawning walker:', error)

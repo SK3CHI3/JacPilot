@@ -9,6 +9,16 @@ interface SkillMapVisualizationProps {
 export function SkillMapVisualization({ data }: SkillMapVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // Provide defaults for missing data
+  const nodes = data?.nodes || []
+  const edges = data?.edges || []
+  const summary = data?.summary || {
+    total_concepts: 0,
+    mastered: 0,
+    in_progress: 0,
+    not_started: 0,
+  }
+
   useEffect(() => {
     if (!canvasRef.current) return
 
@@ -24,29 +34,29 @@ export function SkillMapVisualization({ data }: SkillMapVisualizationProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Draw edges first
-    data.edges.forEach((edge) => {
-      const fromNode = data.nodes.find((n) => n.id === edge.from)
-      const toNode = data.nodes.find((n) => n.id === edge.to)
+    edges.forEach((edge) => {
+      const fromNode = nodes.find((n) => n.id === edge.from)
+      const toNode = nodes.find((n) => n.id === edge.to)
 
       if (!fromNode || !toNode) return
 
       // Calculate positions (simplified circular layout)
-      const fromIndex = data.nodes.indexOf(fromNode)
-      const toIndex = data.nodes.indexOf(toNode)
+      const fromIndex = nodes.indexOf(fromNode)
+      const toIndex = nodes.indexOf(toNode)
 
       const fromX =
         canvas.width / 2 +
-        Math.cos((fromIndex / data.nodes.length) * Math.PI * 2) * 200
+        Math.cos((fromIndex / Math.max(nodes.length, 1)) * Math.PI * 2) * 200
       const fromY =
         canvas.height / 2 +
-        Math.sin((fromIndex / data.nodes.length) * Math.PI * 2) * 200
+        Math.sin((fromIndex / Math.max(nodes.length, 1)) * Math.PI * 2) * 200
 
       const toX =
         canvas.width / 2 +
-        Math.cos((toIndex / data.nodes.length) * Math.PI * 2) * 200
+        Math.cos((toIndex / Math.max(nodes.length, 1)) * Math.PI * 2) * 200
       const toY =
         canvas.height / 2 +
-        Math.sin((toIndex / data.nodes.length) * Math.PI * 2) * 200
+        Math.sin((toIndex / Math.max(nodes.length, 1)) * Math.PI * 2) * 200
 
       // Draw edge
       ctx.strokeStyle =
@@ -59,13 +69,13 @@ export function SkillMapVisualization({ data }: SkillMapVisualizationProps) {
     })
 
     // Draw nodes
-    data.nodes.forEach((node, index) => {
+    nodes.forEach((node, index) => {
       const x =
         canvas.width / 2 +
-        Math.cos((index / data.nodes.length) * Math.PI * 2) * 200
+        Math.cos((index / Math.max(nodes.length, 1)) * Math.PI * 2) * 200
       const y =
         canvas.height / 2 +
-        Math.sin((index / data.nodes.length) * Math.PI * 2) * 200
+        Math.sin((index / Math.max(nodes.length, 1)) * Math.PI * 2) * 200
 
       // Node circle
       const radius = 30 + node.proficiency * 20
@@ -88,7 +98,7 @@ export function SkillMapVisualization({ data }: SkillMapVisualizationProps) {
       ctx.font = '12px sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(node.label.substring(0, 10), x, y)
+      ctx.fillText((node.label || '').substring(0, 10), x, y)
     })
   }, [data])
 
@@ -98,19 +108,19 @@ export function SkillMapVisualization({ data }: SkillMapVisualizationProps) {
         <h2 className="text-2xl font-bold mb-4">Skill Map</h2>
         <div className="grid grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-white">{data.summary.total_concepts}</div>
+            <div className="text-2xl font-bold text-white">{summary.total_concepts}</div>
             <div className="text-sm text-gray-400">Total</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-green-primary">{data.summary.mastered}</div>
+            <div className="text-2xl font-bold text-green-primary">{summary.mastered}</div>
             <div className="text-sm text-gray-400">Mastered</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-yellow-primary">{data.summary.in_progress}</div>
+            <div className="text-2xl font-bold text-yellow-primary">{summary.in_progress}</div>
             <div className="text-sm text-gray-400">In Progress</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-400">{data.summary.not_started}</div>
+            <div className="text-2xl font-bold text-gray-400">{summary.not_started}</div>
             <div className="text-sm text-gray-400">Not Started</div>
           </div>
         </div>

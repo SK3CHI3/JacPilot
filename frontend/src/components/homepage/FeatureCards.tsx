@@ -27,7 +27,12 @@ function FeatureCards() {
   ]
   
   return (
-    <section className="container mx-auto px-6 py-20">
+    <section 
+      className="container mx-auto px-6 py-20"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.02) 0%, rgba(255, 210, 63, 0.02) 100%)'
+      }}
+    >
       <div className="text-center mb-16">
         <h2 className="text-6xl lg:text-7xl font-bold text-gray-900 mb-4">What JacPilot Offers</h2>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
