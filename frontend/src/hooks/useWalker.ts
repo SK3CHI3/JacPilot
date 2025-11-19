@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
-import { spawnWalker, WalkerResponse } from '../services/jacClient'
+import { spawnWalker } from '../services/jacClient'
+import type { WalkerResponse } from '../types'
 
 interface UseWalkerReturn<T> {
   spawn: (walkerName: string, ctx?: Record<string, any>, nodeId?: string) => Promise<WalkerResponse<T>>

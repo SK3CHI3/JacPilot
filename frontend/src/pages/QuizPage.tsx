@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Quiz } from '../types'
+import type { Quiz } from '../types'
 import { generateQuiz, submitQuiz } from '../services/jacClient'
 import { quizzes } from '../services/supabase'
 import { useUser } from '../contexts/UserContext'

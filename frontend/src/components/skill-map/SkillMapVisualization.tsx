@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { SkillMapData } from '../../types'
+import type { SkillMapData } from '../../types'
 import { Card } from '../common/Card'
 
 interface SkillMapVisualizationProps {

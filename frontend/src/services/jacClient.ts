@@ -3,7 +3,7 @@
  * Handles communication with Jaseci backend via Spawn() calls
  */
 
-import { SpawnContext, SpawnResult, WalkerResponse } from '../types'
+import type { SpawnContext, SpawnResult, WalkerResponse } from '../types'
 
 // Configuration - will be set via environment variables
 const JASECI_API_URL = import.meta.env.VITE_JASECI_API_URL || 'http://localhost:8000'
@@ -52,7 +52,7 @@ export async function spawnWalker<T = any>(
 
     return {
       success: true,
-      data: result.report?.[0] || result.report,
+      data: (Array.isArray(result.report) ? result.report[0] : result.report) as T,
     }
   } catch (error) {
     console.error('Error spawning walker:', error)

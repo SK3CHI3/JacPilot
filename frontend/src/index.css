@@ -1,48 +1,116 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Brand Colors - Orange to Yellow gradient */
+  --color-orange-primary: #FF6B35;
+  --color-orange-light: #FF8C5A;
+  --color-yellow-primary: #FFD23F;
+  --color-yellow-light: #FFE066;
+  
+  /* Dark Theme */
+  --color-dark-bg: #0F0F0F;
+  --color-dark-card: #1A1A1A;
+  --color-dark-border: #2D2D2D;
+  
+  /* Purple Accents */
+  --color-purple-primary: #8B5CF6;
+  --color-purple-light: #A78BFA;
+  
+  /* Green Accents */
+  --color-green-primary: #10B981;
+  --color-green-light: #34D399;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%);
+  --gradient-purple: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+  --gradient-green: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+  
+  /* Border Radius */
+  --radius-card: 12px;
+  --radius-button: 8px;
+  
+  /* Shadows */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  
   body {
-    @apply bg-dark-bg text-white font-sans antialiased;
+    background-color: var(--color-dark-bg);
+    color: white;
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
     margin: 0;
     min-height: 100vh;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold;
+    font-weight: bold;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-dark-card rounded-card p-6 shadow-card border border-dark-border;
+    background-color: var(--color-dark-card);
+    border-radius: var(--radius-card);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-dark-border);
   }
   
   .btn-primary {
-    @apply bg-gradient-purple text-white font-semibold px-6 py-3 rounded-button 
-           hover:opacity-90 transition-all duration-200 transform hover:scale-105;
+    background: var(--gradient-purple);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-button);
+    transition: all 0.2s;
+  }
+  
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
   }
   
   .btn-secondary {
-    @apply bg-gradient-primary text-white font-semibold px-6 py-3 rounded-button 
-           hover:opacity-90 transition-all duration-200 transform hover:scale-105;
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-button);
+    transition: all 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
   }
   
   .btn-outline {
-    @apply border-2 border-white/20 text-white font-semibold px-6 py-3 rounded-button 
-           hover:bg-white/10 transition-all duration-200;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-button);
+    transition: all 0.2s;
+    background: transparent;
+  }
+  
+  .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
   }
   
   .progress-bar {
-    @apply h-2 bg-dark-border rounded-full overflow-hidden;
+    height: 0.5rem;
+    background-color: var(--color-dark-border);
+    border-radius: 9999px;
+    overflow: hidden;
   }
   
   .progress-fill {
-    @apply h-full bg-gradient-green transition-all duration-500;
+    height: 100%;
+    background: var(--gradient-green);
+    transition: all 0.5s;
   }
 }

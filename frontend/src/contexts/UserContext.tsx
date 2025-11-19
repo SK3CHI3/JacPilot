@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User, ProgressStats } from '../types'
+import { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import type { User, ProgressStats } from '../types'
 import { auth, users } from '../services/supabase'
 import { getProgressSummary } from '../services/jacClient'
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CodeExercise } from '../types'
+import type { CodeExercise } from '../types'
 import { exercises } from '../services/supabase'
 import { useUser } from '../contexts/UserContext'
 import { CodeEditor } from '../components/code-editor/CodeEditor'

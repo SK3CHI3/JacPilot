@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Lesson } from '../../types'
+import type { Lesson } from '../../types'
 import { getLesson, recordLessonCompletion } from '../../services/jacClient'
 import { lessons } from '../../services/supabase'
 import { useUser } from '../../contexts/UserContext'

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import Navbar from '../components/homepage/Navbar'
 import Hero from '../components/homepage/Hero'
 import FeatureCards from '../components/homepage/FeatureCards'

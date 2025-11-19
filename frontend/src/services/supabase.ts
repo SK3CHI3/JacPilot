@@ -4,7 +4,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../types/supabase'
 
 // Configuration - will be set via environment variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
@@ -14,7 +13,8 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn('Supabase credentials not configured. Some features may not work.')
 }
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Using any for now - will be properly typed when database schema is finalized
+export const supabase = createClient<any>(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 /**
  * Auth helpers
@@ -57,10 +57,10 @@ export const users = {
       .single()
   },
   
-  update: async (id: string, updates: Partial<Database['public']['Tables']['users']['Update']>) => {
+  update: async (id: string, updates: Record<string, any>) => {
     return await supabase
       .from('users')
-      .update(updates)
+      .update(updates as any)
       .eq('id', id)
   },
 }
@@ -116,7 +116,7 @@ export const quizzes = {
   }) => {
     return await supabase
       .from('quiz_attempts')
-      .insert(attempt)
+      .insert(attempt as any)
   },
   
   getAttempts: async (userId: string) => {
@@ -148,7 +148,7 @@ export const exercises = {
   }) => {
     return await supabase
       .from('code_submissions')
-      .insert(submission)
+      .insert(submission as any)
   },
 }
 

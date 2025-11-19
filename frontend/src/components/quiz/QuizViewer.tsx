@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Quiz, Question } from '../../types'
+import type { Quiz } from '../../types'
 import { Button } from '../common/Button'
 import { Card } from '../common/Card'
 

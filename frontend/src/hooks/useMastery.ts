@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Mastery, SkillMapData } from '../types'
+import type { SkillMapData } from '../types'
 import { getSkillMap, getWeakAreas } from '../services/jacClient'
 import { useUser } from '../contexts/UserContext'
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Editor from '@monaco-editor/react'
-import { CodeExercise, TestCase } from '../../types'
+import type { CodeExercise, TestCase } from '../../types'
 import { executeCode } from '../../services/jacClient'
 import { Button } from '../common/Button'
 import { Card } from '../common/Card'
@@ -87,7 +87,7 @@ export function CodeEditor({ exercise, onSubmit }: CodeEditorProps) {
               height="400px"
               defaultLanguage="javascript"
               value={code}
-              onChange={(value) => setCode(value || '')}
+              onChange={(value: string | undefined) => setCode(value || '')}
               theme="vs-dark"
               options={{
                 minimap: { enabled: false },
