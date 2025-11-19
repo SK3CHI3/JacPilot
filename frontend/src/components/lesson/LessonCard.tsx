@@ -1,9 +1,7 @@
-import { useState, lazy, Suspense } from 'react'
+import { useState } from 'react'
 import { Play, CheckCircle2, XCircle, Loader, Code2, BookOpen, Sparkles } from 'lucide-react'
 import { evaluateCode } from '../../services/gemini'
-
-// Lazy load Monaco Editor to avoid hook issues
-const Editor = lazy(() => import('@monaco-editor/react')) as any
+import { MonacoEditorWrapper } from './MonacoEditorWrapper'
 
 interface LessonSection {
   id: string
@@ -155,7 +153,7 @@ export function LessonCard({ section, sectionIndex, totalSections, onComplete, i
         />
       </div>
 
-      {/* Code Example */}
+      {/* Code Example - Using styled pre/code instead of Monaco for read-only */}
       {section.codeExample && (
         <div className="mb-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
           <div className="flex items-center gap-3 mb-4">
@@ -168,26 +166,9 @@ export function LessonCard({ section, sectionIndex, totalSections, onComplete, i
             </div>
           </div>
           <div className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-800 shadow-xl">
-            <Suspense fallback={
-              <div className="h-[250px] flex items-center justify-center bg-gray-900 text-gray-400">
-                <Loader className="w-6 h-6 animate-spin" />
-              </div>
-            }>
-              <Editor
-                height="250px"
-                defaultLanguage="jac"
-                value={section.codeExample}
-                theme="vs-dark"
-                options={{
-                  readOnly: true,
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                } as any}
-              />
-            </Suspense>
+            <pre className="p-6 m-0 overflow-x-auto text-gray-100 text-sm font-mono leading-relaxed">
+              <code className="text-gray-100">{section.codeExample}</code>
+            </pre>
           </div>
         </div>
       )}
@@ -202,29 +183,16 @@ export function LessonCard({ section, sectionIndex, totalSections, onComplete, i
           
           <p className="text-gray-700 mb-4">{section.practiceExercise.description}</p>
 
-          {/* Code Editor */}
+          {/* Code Editor - Only for editable practice exercises */}
           <div className="mb-4">
             <div className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-800 shadow-xl">
-              <Suspense fallback={
-                <div className="h-[300px] flex items-center justify-center bg-gray-900 text-gray-400">
-                  <Loader className="w-6 h-6 animate-spin" />
-                </div>
-              }>
-                <Editor
-                  height="300px"
-                  defaultLanguage="jac"
-                  value={code}
-                  onChange={(value: string | undefined) => setCode(value || '')}
-                  theme="vs-dark"
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                  } as any}
-                />
-              </Suspense>
+              <MonacoEditorWrapper
+                height="300px"
+                value={code}
+                onChange={(value: string | undefined) => setCode(value || '')}
+                language="jac"
+                readOnly={false}
+              />
             </div>
           </div>
 
