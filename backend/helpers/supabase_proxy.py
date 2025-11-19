@@ -52,6 +52,68 @@ def query_supabase():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/user_progress/<user_id>', methods=['GET'])
+def get_user_progress(user_id):
+    """Get user lesson progress"""
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/user_lesson_progress"
+        params = {
+            "select": "*",
+            "user_id": f"eq.{user_id}",
+            "order": "completed_at.desc"
+        }
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/quiz_attempts/<user_id>', methods=['GET'])
+def get_quiz_attempts(user_id):
+    """Get user quiz attempts"""
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/quiz_attempts"
+        params = {
+            "select": "score",
+            "user_id": f"eq.{user_id}"
+        }
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/lesson/<lesson_id>', methods=['GET'])
+def get_lesson(lesson_id):
+    """Get a single lesson by ID"""
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/lessons"
+        params = {
+            "select": "*",
+            "id": f"eq.{lesson_id}"
+        }
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+        return jsonify(data[0] if data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/lessons', methods=['GET'])
 def get_lessons():
     """Get all lessons"""
