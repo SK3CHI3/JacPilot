@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import Editor from '@monaco-editor/react'
-import { Play, CheckCircle2, XCircle, Loader, Code2, BookOpen } from 'lucide-react'
+import { useState, lazy, Suspense } from 'react'
+import { Play, CheckCircle2, XCircle, Loader, Code2, BookOpen, Sparkles } from 'lucide-react'
 import { evaluateCode } from '../../services/gemini'
+
+// Lazy load Monaco Editor to avoid hook issues
+const Editor = lazy(() => import('@monaco-editor/react')) as any
 
 interface LessonSection {
   id: string
@@ -90,61 +92,102 @@ export function LessonCard({ section, sectionIndex, totalSections, onComplete, i
   }
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 mb-6">
-      {/* Section Header */}
-      <div className="mb-6">
+    <div className="bg-white rounded-3xl p-10 shadow-2xl border border-gray-200 mb-8 hover:shadow-3xl transition-shadow duration-300">
+      {/* Section Header - Professional Design */}
+      <div className="mb-8 pb-6 border-b-2 border-gray-100">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div 
-              className="p-2 rounded-lg"
+              className="p-3 rounded-xl shadow-lg"
               style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)' }}
             >
-              <BookOpen className="w-5 h-5 text-white" />
+              <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{section.title}</h2>
-              <p className="text-sm text-gray-500">
-                Section {sectionIndex + 1} of {totalSections}
-              </p>
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-3xl font-bold text-gray-900">{section.title}</h2>
+                {isCompleted && (
+                  <div className="flex items-center gap-1 px-3 py-1 bg-green-100 rounded-full">
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <span className="text-xs font-semibold text-green-700">Done</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Sparkles className="w-4 h-4" />
+                <span>Section {sectionIndex + 1} of {totalSections}</span>
+              </div>
             </div>
           </div>
-          {isCompleted && (
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="w-6 h-6" />
-              <span className="font-semibold">Completed</span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div 
-        className="prose prose-lg max-w-none mb-6 text-gray-700"
-        dangerouslySetInnerHTML={{ __html: section.content }}
-      />
+      {/* Content - Professional formatted */}
+      <div className="mb-8">
+        <div 
+          className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+          style={{
+            fontFamily: 'Inter, system-ui, sans-serif'
+          }}
+          dangerouslySetInnerHTML={{ 
+            __html: (section.content || '')
+              .replace(/<h2[^>]*>/gi, '<h2 class="text-2xl font-bold text-gray-900 mt-8 mb-4 pb-3 border-b-2 border-gray-200">')
+              .replace(/<\/h2>/gi, '</h2>')
+              .replace(/<h3[^>]*>/gi, '<h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3 flex items-center gap-2"><span class="w-2 h-2 bg-[#FF6B35] rounded-full"></span>')
+              .replace(/<\/h3>/gi, '</h3>')
+              .replace(/<p[^>]*>/gi, '<p class="mb-4 text-gray-700 leading-7 text-base">')
+              .replace(/<\/p>/gi, '</p>')
+              .replace(/<ul[^>]*>/gi, '<ul class="list-disc list-inside mb-4 space-y-2 text-gray-700 ml-4">')
+              .replace(/<\/ul>/gi, '</ul>')
+              .replace(/<ol[^>]*>/gi, '<ol class="list-decimal list-inside mb-4 space-y-2 text-gray-700 ml-4">')
+              .replace(/<\/ol>/gi, '</ol>')
+              .replace(/<li[^>]*>/gi, '<li class="leading-7 mb-1">')
+              .replace(/<\/li>/gi, '</li>')
+              .replace(/<code[^>]*>/gi, '<code class="bg-gray-100 text-[#FF6B35] px-2 py-1 rounded text-sm font-mono border border-gray-200">')
+              .replace(/<\/code>/gi, '</code>')
+              .replace(/<pre[^>]*>/gi, '<pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4 border-2 border-gray-800 shadow-inner"><code class="text-gray-100">')
+              .replace(/<\/pre>/gi, '</code></pre>')
+              .replace(/<strong[^>]*>/gi, '<strong class="font-bold text-gray-900">')
+              .replace(/<\/strong>/gi, '</strong>')
+              .replace(/<em[^>]*>/gi, '<em class="italic text-gray-800">')
+              .replace(/<\/em>/gi, '</em>')
+          }}
+        />
+      </div>
 
       {/* Code Example */}
       {section.codeExample && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Code2 className="w-5 h-5 text-[#FF6B35]" />
-            <h3 className="text-lg font-semibold text-gray-900">Code Example</h3>
+        <div className="mb-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-[#FF6B35] rounded-lg">
+              <Code2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">Code Example</h3>
+              <p className="text-sm text-gray-600">Try running this code to see how it works</p>
+            </div>
           </div>
-          <div className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-200">
-            <Editor
-              height="250px"
-              defaultLanguage="jac"
-              value={section.codeExample}
-              theme="vs-dark"
-              options={{
-                readOnly: true,
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-              }}
-            />
+          <div className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-800 shadow-xl">
+            <Suspense fallback={
+              <div className="h-[250px] flex items-center justify-center bg-gray-900 text-gray-400">
+                <Loader className="w-6 h-6 animate-spin" />
+              </div>
+            }>
+              <Editor
+                height="250px"
+                defaultLanguage="jac"
+                value={section.codeExample}
+                theme="vs-dark"
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                } as any}
+              />
+            </Suspense>
           </div>
         </div>
       )}
@@ -161,21 +204,27 @@ export function LessonCard({ section, sectionIndex, totalSections, onComplete, i
 
           {/* Code Editor */}
           <div className="mb-4">
-            <div className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-200">
-              <Editor
-                height="300px"
-                defaultLanguage="jac"
-                value={code}
-                onChange={(value: string | undefined) => setCode(value || '')}
-                theme="vs-dark"
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: 'on',
-                  scrollBeyondLastLine: false,
-                  automaticLayout: true,
-                }}
-              />
+            <div className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-800 shadow-xl">
+              <Suspense fallback={
+                <div className="h-[300px] flex items-center justify-center bg-gray-900 text-gray-400">
+                  <Loader className="w-6 h-6 animate-spin" />
+                </div>
+              }>
+                <Editor
+                  height="300px"
+                  defaultLanguage="jac"
+                  value={code}
+                  onChange={(value: string | undefined) => setCode(value || '')}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                  } as any}
+                />
+              </Suspense>
             </div>
           </div>
 

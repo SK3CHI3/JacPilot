@@ -47,26 +47,57 @@ walker learning_planner {
     has action: str = "plan_next_lesson";
     
     with entry {
-        report {
-            "success": True,
-            "lesson_id": "lesson-1",
-            "title": "Introduction to Jac Language",
-            "reason": "Next lesson",
-            "estimated_time": 15
-        };
+        if (action == "plan_next_lesson") {
+            # For now, return first lesson (will query Supabase when proxy is running)
+            # TODO: Query Supabase via proxy for lessons and user progress
+            report {
+                "success": True,
+                "lesson_id": "lesson-1",
+                "title": "Introduction to Jaseci & Jac",
+                "reason": "Next lesson in sequence",
+                "estimated_time": 15
+            };
+        } else {
+            report {
+                "success": False,
+                "error": "Unknown action: " + action
+            };
+        }
     }
 }
 
 walker quiz_generator {
     has lesson_id: str = "";
     has user_id: str = "";
+    has lesson_content: str = "";
+    has lesson_title: str = "";
+    has concepts: list = [];
     
     with entry {
+        # Calculate difficulty based on user mastery (placeholder for now)
+        difficulty = 2;
+        
+        # Build topics list for Gemini
+        topics_list = [];
+        # Handle concepts safely - check if it's a valid list before iterating
+        # At runtime, concepts should be a list if provided
+        if (concepts != None && concepts != [] && hasattr(concepts, "__iter__")) {
+            for concept in concepts {
+                topics_list += concept;
+            }
+        }
+        
+        # Use Gemini API via HTTP proxy to generate quiz
+        # TODO: Implement HTTP call when proxy is ready
+        # For now, return placeholder
+        questions = [];
+        
         report {
             "success": True,
             "quiz_id": "quiz-" + lesson_id + "-" + user_id,
-            "difficulty": 2,
-            "questions": []
+            "difficulty": difficulty,
+            "questions": questions,
+            "note": "Gemini proxy integration pending - run start_gemini_proxy.bat first"
         };
     }
 }
@@ -76,15 +107,22 @@ walker answer_evaluator {
     has user_answer: str = "";
     has correct_answer: str = "";
     has user_id: str = "";
+    has question_context: dict = {};
+    has question_type: str = "free_text";
     has action: str = "evaluate_answer";
     
     with entry {
         if (action == "evaluate_answer") {
+            # Use Gemini API via HTTP proxy
+            # TODO: Implement HTTP call when proxy is ready
+            # For now, return placeholder
             report {
                 "success": True,
                 "score": 0.5,
                 "correct": False,
-                "feedback": "Evaluation completed"
+                "feedback": "Evaluation completed - Gemini proxy integration pending",
+                "strengths": [],
+                "improvements": ["Run start_gemini_proxy.bat to enable AI evaluation"]
             };
         } else {
             report {
@@ -124,15 +162,17 @@ walker skill_analyzer {
     
     with entry {
         if (action == "generate_skill_map") {
+            # Return placeholder for now
+            # TODO: Query Supabase via proxy when implemented
             report {
                 "success": True,
                 "nodes": [],
                 "edges": [],
                 "summary": {
-                    "total_concepts": 0,
+                    "total_concepts": 58,
                     "mastered": 0,
                     "in_progress": 0,
-                    "not_started": 0
+                    "not_started": 58
                 }
             };
         } elif (action == "identify_weak_areas") {
@@ -146,6 +186,25 @@ walker skill_analyzer {
                 "error": "Unknown action: " + action
             };
         }
+    }
+}
+
+walker get_lesson {
+    has lesson_id: str = "";
+    
+    with entry {
+        # For now, return placeholder
+        # TODO: Query Supabase or OSP graph when implemented
+        # Use lesson_id directly - it should be available at runtime
+        report {
+            "success": True,
+            "lesson_id": lesson_id if lesson_id else "",
+            "title": "Lesson",
+            "content": "",
+            "order": 0,
+            "estimated_time": 15,
+            "lesson_type": "theory"
+        };
     }
 }
 

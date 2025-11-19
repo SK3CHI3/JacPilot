@@ -155,11 +155,39 @@ export const lessons = {
   },
   
   getById: async (id: string) => {
-    return await supabase
+    // Simplified query to avoid 406 error - get lesson first, then concepts separately
+    const { data: lesson, error: lessonError } = await supabase
       .from('lessons')
-      .select('*, lesson_concepts(concepts(*))')
+      .select('*')
       .eq('id', id)
       .single()
+    
+    if (lessonError || !lesson) {
+      return { data: null, error: lessonError }
+    }
+    
+    // Get concepts separately
+    const { data: lessonConcepts } = await supabase
+      .from('lesson_concepts')
+      .select(`
+        concept_id,
+        concepts (
+          id,
+          name,
+          description,
+          difficulty_level,
+          category
+        )
+      `)
+      .eq('lesson_id', id)
+    
+    return {
+      data: {
+        ...lesson,
+        lesson_concepts: lessonConcepts || []
+      },
+      error: null
+    }
   },
   
   getProgress: async (userId: string) => {

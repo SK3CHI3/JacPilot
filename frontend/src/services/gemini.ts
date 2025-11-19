@@ -3,8 +3,14 @@
  * Handles AI-powered content generation and code evaluation
  */
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyAxHPVZfU8SaHEtN8fpBi7h8uoRNc8ukrg'
+// Get Gemini API key from environment variables
+// Set VITE_GEMINI_API_KEY in your .env file
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+
+if (!GEMINI_API_KEY) {
+  console.warn('⚠️  VITE_GEMINI_API_KEY not set in .env file. Gemini features will not work.')
+}
 
 interface GeminiRequest {
   contents: Array<{
