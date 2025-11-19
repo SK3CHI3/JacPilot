@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/homepage/Navbar'
 import Hero from '../components/homepage/Hero'
+import AnimatedCodeSection from '../components/homepage/AnimatedCodeSection'
 import FeatureCards from '../components/homepage/FeatureCards'
 import { Rocket, Mail, Github, Twitter, Info, Shield } from 'lucide-react'
 
@@ -8,7 +9,10 @@ function Homepage() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
-      <Hero />
+      <div className="pt-24">
+        <Hero />
+      </div>
+      <AnimatedCodeSection />
       <FeatureCards />
       
       {/* CTA Section */}
