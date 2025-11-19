@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@supabase/supabase-js": "^2.83.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.554.0",
+    "monaco-editor": "^0.54.0",
+    "recharts": "^3.4.1",
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17"
+  }
+}
