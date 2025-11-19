@@ -1,0 +1,5 @@
+[33m3997983[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add missing routes, fix progress tracker, document AI usage - Added /lessons, /quiz, /code index pages - Created Settings page - Fixed QuizIndexPage to fetch from lessons - Documented AI usage in AI_USAGE.md
+[33mb3bf47f[m Fix Monaco Editor hook error: replace read-only editor with pre/code, add MonacoEditorWrapper for editable sections
+[33m5b2c932[m Fix Monaco Editor hook error, improve lesson card design, fix Supabase query, add get_lesson walker
+[33mcdeb010[m Fix SkillMapVisualization undefined summary error and improve error handling
+[33m7fbbf7e[m Add animated code typing section after hero with looping Jac examples
