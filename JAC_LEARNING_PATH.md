@@ -1,4 +1,4 @@
-# Comprehensive JAC Learning Path
+# Comprehensive JAC Learning Path.
 
 ## 🎯 Overview
 
