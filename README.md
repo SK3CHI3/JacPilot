@@ -147,25 +147,6 @@ See the `docs/` folder for detailed documentation:
 - `AGENT_SPECIFICATIONS.md` - Agent implementation details
 - `ARCHITECTURE_DECISIONS.md` - Design decisions
 
-## 🧪 Development
-
-### Running Tests
-```bash
-cd frontend
-npm test
-```
-
-### Building for Production
-```bash
-cd frontend
-npm run build
-```
-
-### Linting
-```bash
-cd frontend
-npm run lint
-```
 
 ## 📝 License
 
