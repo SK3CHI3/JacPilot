@@ -20,7 +20,7 @@ Backend (Jaseci + OSP + byLLM)
     ↓ Graph operations    ↓ Data persistence
 OSP Graph              Supabase
 ```
-
+ 
 ## 🚀 Quick Start
 
 ### Prerequisites
