@@ -1,4 +1,5 @@
-# JacPilot - Interactive Learning Platform for Jaseci (Jac Lnag)
+# JacPilot - Interactive Learning Platform for Jaseci (Jac Lang
+g)
 
 A modern, gamified learning platform for mastering the Jac programming language and Jaseci framework. Built with React, TypeScript, Jaseci, and Supabase.
 
