@@ -175,9 +175,5 @@ CC0 1.0 Universal
 
 This is a hackathon project. Contributions welcome!
 
-## 📞 Support
 
-For issues or questions, please open an issue on GitHub.
-
----
 
