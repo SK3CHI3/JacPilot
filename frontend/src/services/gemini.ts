@@ -6,7 +6,10 @@
 // Get Gemini API key from environment variables
 // Set VITE_GEMINI_API_KEY in your .env file
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+// Use v1beta API with gemini-2.5-flash model
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+// Use gemini_proxy for quiz generation (handles the correct model and API version)
+const GEMINI_PROXY_URL = 'http://localhost:8001'
 
 if (!GEMINI_API_KEY) {
   console.warn('⚠️  VITE_GEMINI_API_KEY not set in .env file. Gemini features will not work.')
@@ -56,7 +59,8 @@ export async function generateContent(prompt: string): Promise<string> {
     })
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`)
+      const errorText = await response.text().catch(() => response.statusText)
+      throw new Error(`Gemini API error (${response.status}): ${errorText}`)
     }
 
     const data: GeminiResponse = await response.json()
@@ -145,41 +149,28 @@ export async function generateQuizQuestions(
   difficulty: number,
   numQuestions: number = 5
 ): Promise<any[]> {
-  const prompt = `Generate ${numQuestions} quiz questions about Jaseci/Jac programming based on this lesson content.
-
-Lesson Content:
-${lessonContent}
-
-Difficulty Level: ${difficulty}/5
-
-Generate questions in JSON format:
-[
-  {
-    "id": "q1",
-    "type": "multiple_choice",
-    "question": "What is a walker?",
-    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-    "correct_answer": 0,
-    "explanation": "Explanation here"
-  },
-  {
-    "id": "q2",
-    "type": "free_text",
-    "question": "Explain the concept of OSP",
-    "max_score": 10,
-    "explanation": "Expected answer explanation"
-  }
-]
-
-Include a mix of multiple choice, free text, and coding questions.`
-
+  // Quiz generation is handled by gemini_proxy which uses byLLM
   try {
-    const response = await generateContent(prompt)
-    const jsonMatch = response.match(/\[[\s\S]*\]/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
+    // Call gemini_proxy instead of Gemini API directly
+    const response = await fetch(`${GEMINI_PROXY_URL}/generate_quiz_questions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        lesson_content: lessonContent,
+        difficulty: difficulty || 2,
+        num_questions: numQuestions || 8,
+        topics: []
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Gemini proxy error: ${response.statusText}`)
     }
-    return []
+
+    const data = await response.json()
+    return data.questions || []
   } catch (error) {
     console.error('Error generating quiz:', error)
     return []

@@ -8,7 +8,12 @@ import type { WalkerResponse } from '../types'
 
 // Configuration - will be set via environment variables
 const JASECI_API_URL = import.meta.env.VITE_JASECI_API_URL || 'http://localhost:8000'
-const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || ''
+const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MzFhOTcyNDNlMTBhNTAyOWU2OWNmOSIsImVtYWlsIjoiYWRtaW5AamFjcGlsb3QuY29tIiwicm9vdF9pZCI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsImlzX2FjdGl2YXRlZCI6dHJ1ZSwiaXNfYWRtaW4iOnRydWUsImV4cGlyYXRpb24iOjE3NjQ5MTA4MjYsInN0YXRlIjoiRUk4c0NObDQifQ.EIfUqO8pXm-baanLXjFzpSl4WiE8nMvhygVVKy0zKnk'
+
+// Debug: Log if API key is missing (only in dev)
+if (import.meta.env.DEV && !JASECI_API_KEY) {
+  console.warn('⚠️ JASECI_API_KEY is not set! Requests will fail with 401 Unauthorized')
+}
 
 /**
  * Spawn a walker on the Jaseci backend
@@ -30,14 +35,22 @@ export async function spawnWalker<T = any>(
       endpoint = `${JASECI_API_URL}/walker/${walkerName}/${nodeId}`
     }
 
-    // Prepare headers
+    // Prepare headers - ALWAYS include authorization
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${JASECI_API_KEY}`,
     }
     
-    // Add authorization if API key is provided
-    if (JASECI_API_KEY) {
-      headers['Authorization'] = `Bearer ${JASECI_API_KEY}`
+    // Debug log in development
+    if (import.meta.env.DEV) {
+      const tokenPreview = JASECI_API_KEY ? `${JASECI_API_KEY.substring(0, 30)}...` : 'MISSING'
+      console.log(`[jacClient] Calling walker: ${walkerName}`, {
+        url: endpoint,
+        hasAuth: !!JASECI_API_KEY,
+        tokenLength: JASECI_API_KEY?.length || 0,
+        tokenPreview: tokenPreview,
+        fullToken: JASECI_API_KEY // Log full token for debugging
+      })
     }
 
     const response = await fetch(endpoint, {
@@ -85,10 +98,14 @@ export async function spawnWalker<T = any>(
       data: result as T,
     }
   } catch (error) {
-    console.error('Error spawning walker:', error)
+    // Only log if it's not a connection refused error (Jaseci server not running)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    if (!errorMessage.includes('Failed to fetch') && !errorMessage.includes('ERR_CONNECTION_REFUSED')) {
+      console.error('Error spawning walker:', error)
+    }
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: errorMessage,
     }
   }
 }
