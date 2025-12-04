@@ -191,11 +191,64 @@ export const lessons = {
   },
   
   getProgress: async (userId: string) => {
+    // Select specific columns to avoid 406 errors with foreign key relationships
     return await supabase
       .from('user_lesson_progress')
-      .select('*, lessons(*)')
+      .select(`
+        id,
+        user_id,
+        lesson_id,
+        completed_at,
+        score,
+        progress_percentage,
+        time_spent,
+        lessons (
+          id,
+          title,
+          order_index
+        )
+      `)
       .eq('user_id', userId)
       .order('completed_at', { ascending: false })
+  },
+  
+  getLessonProgress: async (userId: string, lessonId: string) => {
+    // Select specific columns to avoid 406 errors
+    return await supabase
+      .from('user_lesson_progress')
+      .select('id, user_id, lesson_id, completed_at, score, progress_percentage, time_spent')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle() // Use maybeSingle instead of single to avoid errors if not found
+  },
+  
+  updateProgress: async (userId: string, lessonId: string, progressPercentage: number) => {
+    // First check if record exists
+    const { data: existing } = await supabase
+      .from('user_lesson_progress')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle() // Use maybeSingle to avoid errors if not found
+
+    const progressData = {
+      user_id: userId,
+      lesson_id: lessonId,
+      progress_percentage: Math.min(100, Math.max(0, progressPercentage)),
+    }
+
+    if (existing?.id) {
+      // Update existing record
+      return await supabase
+        .from('user_lesson_progress')
+        .update(progressData)
+        .eq('id', existing.id)
+    } else {
+      // Insert new record
+      return await supabase
+        .from('user_lesson_progress')
+        .insert(progressData)
+    }
   },
 }
 
@@ -204,13 +257,15 @@ export const lessons = {
  */
 export const quizzes = {
   getByLesson: async (lessonId: string) => {
+    // Select specific columns to avoid 406 errors
+    // Only select columns that exist in the quizzes table
     return await supabase
       .from('quizzes')
-      .select('*')
+      .select('id, lesson_id, difficulty, questions, created_at, jaseci_quiz_id')
       .eq('lesson_id', lessonId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle() // Use maybeSingle to avoid errors if not found
   },
   
   recordAttempt: async (attempt: {

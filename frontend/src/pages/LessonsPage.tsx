@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '../contexts/UserContext'
 import { lessons } from '../services/supabase'
 import Navbar from '../components/dashboard/Navbar'
-import { BookOpen, Clock, Play } from 'lucide-react'
+import { BookOpen, Clock, Play, CheckCircle2 } from 'lucide-react'
 import type { Lesson } from '../types'
 
 function LessonsPage() {
   const { user } = useUser()
   const navigate = useNavigate()
   const [lessonsList, setLessonsList] = useState<Lesson[]>([])
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,6 +27,19 @@ function LessonsPage() {
       if (error) throw error
       if (data) {
         setLessonsList(data as Lesson[])
+        
+        // Load completed lessons
+        if (user) {
+          const { data: progressData } = await lessons.getProgress(user.id)
+          if (progressData) {
+            const completed = new Set(
+              (progressData as any[])
+                .filter((p: any) => p.completed_at)
+                .map((p: any) => p.lesson_id)
+            )
+            setCompletedLessons(completed)
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading lessons:', error)
@@ -66,29 +80,54 @@ function LessonsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lessonsList.map((lesson) => (
-              <Link
-                key={lesson.id}
-                to={`/lessons/${lesson.id}`}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl hover:border-[#FF6B35] transition-all group"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#FF6B35] transition-colors mb-2">
-                      {lesson.title}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock className="w-4 h-4" />
-                      <span>{lesson.estimated_time || 15} min</span>
+            {lessonsList.map((lesson) => {
+              const completed = completedLessons.has(lesson.id)
+              return (
+                <Link
+                  key={lesson.id}
+                  to={`/lessons/${lesson.id}`}
+                  className={`bg-white rounded-2xl p-6 shadow-lg border transition-all group ${
+                    completed 
+                      ? 'border-green-200 bg-green-50' 
+                      : 'border-gray-200 hover:shadow-xl hover:border-[#FF6B35]'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className={`text-xl font-bold transition-colors ${
+                          completed 
+                            ? 'text-gray-600 line-through' 
+                            : 'text-gray-900 group-hover:text-[#FF6B35]'
+                        }`}>
+                          {lesson.title}
+                        </h3>
+                        {completed && (
+                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        <span>{lesson.estimated_time || 15} min</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 mt-4">
-                  <Play className="w-5 h-5 text-[#FF6B35] group-hover:translate-x-1 transition-transform" />
-                  <span className="text-sm font-semibold text-[#FF6B35]">Start Lesson</span>
-                </div>
-              </Link>
-            ))}
+                  <div className="flex items-center gap-2 mt-4">
+                    {completed ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-semibold text-green-600">Completed</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5 text-[#FF6B35] group-hover:translate-x-1 transition-transform" />
+                        <span className="text-sm font-semibold text-[#FF6B35]">Start Lesson</span>
+                      </>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
           </div>
 
           {lessonsList.length === 0 && !loading && (
