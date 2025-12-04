@@ -14,6 +14,40 @@ walker answer_evaluator {
     has action = "evaluate_answer";
     
     can evaluate_answer {
+        /**
+         * ============================================================
+         * byLLM PROMPT DOCUMENTATION - Answer Evaluation (Analytical)
+         * ============================================================
+         * Role: Answer Analyzer & Feedback Generator
+         * Model: gemini-pro
+         * Temperature: Default (analytical tasks need consistency)
+         * Type: Analytical AI - Evaluates correctness and provides feedback
+         * 
+         * Prompt Structure:
+         * 1. Input Data:
+         *    - User Answer: The answer provided by the user
+         *    - Correct Answer: The expected correct answer
+         *    - Question Context: Additional context about the question
+         * 2. Task: Evaluate correctness and quality
+         * 3. Output Requirements:
+         *    - Score (0.0 to 1.0): Numerical assessment
+         *    - Correctness (true/false): Binary correctness
+         *    - Detailed feedback: Explanation of evaluation
+         *    - Strengths: What the user did well
+         *    - Improvements: Areas for improvement
+         * 4. Format: JSON structure
+         * 
+         * Expected Output: JSON with:
+         *   - score: float (0.0-1.0)
+         *   - correct: boolean
+         *   - feedback: string (detailed explanation)
+         *   - strengths: array of strings
+         *   - improvements: array of strings
+         * 
+         * Use Case: Free-text answer evaluation with detailed feedback
+         * ============================================================
+         */
+        
         // Evaluate using byLLM
         prompt = "Evaluate this answer for correctness and quality:
                 User Answer: '" + user_answer + "'

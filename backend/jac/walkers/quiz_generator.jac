@@ -59,6 +59,37 @@ walker quiz_generator {
             difficulty = 4;
         }
         
+        /**
+         * ============================================================
+         * byLLM PROMPT DOCUMENTATION - Quiz Generation (Generative)
+         * ============================================================
+         * Role: Content Generator
+         * Model: gemini-pro
+         * Temperature: 0.7 (balanced creativity/consistency)
+         * Type: Generative AI - Creates quiz questions from lesson content
+         * 
+         * Prompt Structure:
+         * 1. Context: Lesson title, content, topics covered
+         * 2. Difficulty: Adaptive based on user mastery (1-4 scale)
+         *    - Level 1: Beginner (mastery < 0.3)
+         *    - Level 2: Intermediate (mastery 0.3-0.6)
+         *    - Level 3: Advanced (mastery 0.6-0.8)
+         *    - Level 4: Expert (mastery >= 0.8)
+         * 3. Requirements: Question types and count
+         *    - 5 multiple choice questions
+         *    - 2 free-text questions
+         *    - 1 coding exercise
+         * 4. Format: JSON structure specification
+         * 
+         * Expected Output: JSON with questions array containing:
+         *   - Multiple choice: id, type, question, options[], correct_answer, explanation
+         *   - Free text: id, type, question, max_score, explanation
+         *   - Coding: id, type, question, starter_code, test_cases[]
+         * 
+         * Use Case: Adaptive quiz generation based on user's current mastery level
+         * ============================================================
+         */
+        
         // Generate quiz using byLLM
         prompt = "Generate a " + difficulty + " level quiz about Jaseci/Jac programming.
                 Lesson Title: " + lesson.title + "
