@@ -67,17 +67,39 @@ def generate_quiz():
     """Generate quiz questions using Gemini"""
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({
+                "questions": [],
+                "error": "No JSON data received"
+            }), 400
+        
         lesson_content = data.get('lesson_content', '')
         difficulty = data.get('difficulty', 2)
         num_questions = data.get('num_questions', 8)
         topics = data.get('topics', [])
         
+        print(f"[gemini_proxy] Generating quiz - difficulty: {difficulty}, topics: {topics}")
+        
         result = GeminiClient.generate_quiz(lesson_content, difficulty, topics)
+        
+        if not result or 'questions' not in result:
+            print(f"[gemini_proxy] Warning: Invalid result format: {result}")
+            return jsonify({
+                "questions": [],
+                "error": "Invalid response format from Gemini"
+            }), 500
+        
+        print(f"[gemini_proxy] Generated {len(result.get('questions', []))} questions")
         return jsonify(result)
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[gemini_proxy] Error generating quiz: {str(e)}")
+        print(f"[gemini_proxy] Traceback: {error_trace}")
         return jsonify({
             "questions": [],
-            "error": str(e)
+            "error": str(e),
+            "traceback": error_trace
         }), 500
 
 if __name__ == '__main__':

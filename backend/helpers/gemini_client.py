@@ -8,8 +8,10 @@ import json
 import requests
 from typing import Dict, Any, Optional
 
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+# Get API key from environment, with fallback
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '') or 'AIzaSyCH5gYFaTRPkCvI92Rlp--TgVgdR9aW-C0'
+# Use v1beta API with gemini-2.5-flash (available for free API keys)
+GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
 class GeminiClient:
     """HTTP client for Gemini API"""
@@ -32,17 +34,33 @@ class GeminiClient:
             }]
         }
         
-        response = requests.post(
-            f'{GEMINI_API_URL}?key={GEMINI_API_KEY}',
-            headers=headers,
-            json=data
-        )
-        
-        if not response.ok:
-            raise Exception(f"Gemini API error: {response.status_text}")
-        
-        result = response.json()
-        return result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+        try:
+            response = requests.post(
+                f'{GEMINI_API_URL}?key={GEMINI_API_KEY}',
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+            
+            if not response.ok:
+                error_text = response.text
+                print(f"[gemini_client] API error {response.status_code}: {error_text}")
+                raise Exception(f"Gemini API error {response.status_code}: {error_text}")
+            
+            result = response.json()
+            text = result.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+            
+            if not text:
+                print(f"[gemini_client] Warning: Empty response from API. Full result: {result}")
+                raise Exception("Empty response from Gemini API")
+            
+            return text
+        except requests.exceptions.RequestException as e:
+            print(f"[gemini_client] Request error: {str(e)}")
+            raise Exception(f"Request failed: {str(e)}")
+        except Exception as e:
+            print(f"[gemini_client] Error: {str(e)}")
+            raise
     
     @staticmethod
     def generate_quiz(lesson_content: str, difficulty: int, topics: list) -> Dict[str, Any]:
