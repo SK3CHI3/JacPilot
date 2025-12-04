@@ -44,7 +44,12 @@ function LearningPath() {
         // Fetch user progress
         const { data: progressData } = await lessonsService.getProgress(user.id)
         if (progressData) {
-          const completed = new Set((progressData as any[]).map((p: any) => p.lesson_id))
+          // Only mark as completed if completed_at is set
+          const completed = new Set(
+            (progressData as any[])
+              .filter((p: any) => p.completed_at)
+              .map((p: any) => p.lesson_id)
+          )
           setCompletedLessons(completed)
         }
 

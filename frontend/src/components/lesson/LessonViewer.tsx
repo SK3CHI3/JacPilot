@@ -27,12 +27,32 @@ export function LessonViewer() {
   const [sections, setSections] = useState<LessonSection[]>([])
   const [currentSection, setCurrentSection] = useState(0)
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set())
+  const [readingProgress, setReadingProgress] = useState(0) // 0-100
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false) // Track if lesson is completed
 
   useEffect(() => {
     loadLesson()
+    return () => {
+      // Save progress on unmount
+      if (user && lesson && readingProgress > 0) {
+        saveProgress(readingProgress)
+      }
+    }
   }, [id])
+
+  // Auto-save progress when it changes
+  useEffect(() => {
+    if (user && lesson && readingProgress > 0) {
+      // Debounce saves - wait 2 seconds after last change
+      const timeout = setTimeout(() => {
+        saveProgress(readingProgress)
+      }, 2000)
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [readingProgress, user, lesson])
 
   const loadLesson = async () => {
     if (!id) return
@@ -48,6 +68,11 @@ export function LessonViewer() {
         // Parse lesson content into sections
         const parsedSections = parseLessonContent(lessonData)
         setSections(parsedSections)
+        
+        // Load saved progress after sections are set
+        if (user) {
+          await loadSavedProgress(user.id, id, parsedSections)
+        }
       } else {
         // Fallback to Jaseci
         const response = await getLesson(id)
@@ -55,12 +80,56 @@ export function LessonViewer() {
           setLesson(response.data as Lesson)
           const parsedSections = parseLessonContent(response.data as any)
           setSections(parsedSections)
+          
+          // Load saved progress after sections are set
+          if (user) {
+            await loadSavedProgress(user.id, id, parsedSections)
+          }
         }
       }
     } catch (error) {
       console.error('Error loading lesson:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadSavedProgress = async (userId: string, lessonId: string, sectionsList: LessonSection[]) => {
+    try {
+      const { data, error } = await lessons.getLessonProgress(userId, lessonId)
+      if (!error && data) {
+        // Check if lesson is completed
+        if (data.completed_at) {
+          setIsCompleted(true)
+          setReadingProgress(100)
+          // Mark all sections as completed
+          const allCompleted = new Set(sectionsList.map(s => s.id))
+          setCompletedSections(allCompleted)
+        } else if (data.progress_percentage !== null && data.progress_percentage !== undefined) {
+          const savedProgress = data.progress_percentage
+          setReadingProgress(savedProgress)
+          // Restore completed sections based on progress
+          const progressRatio = savedProgress / 100
+          const sectionsToComplete = Math.floor(sectionsList.length * progressRatio)
+          const completed = new Set<string>()
+          for (let i = 0; i < sectionsToComplete && i < sectionsList.length; i++) {
+            completed.add(sectionsList[i].id)
+          }
+          setCompletedSections(completed)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved progress:', error)
+    }
+  }
+
+  const saveProgress = async (progress: number) => {
+    if (!user || !lesson) return
+    
+    try {
+      await lessons.updateProgress(user.id, lesson.id, progress)
+    } catch (error) {
+      console.error('Error saving progress:', error)
     }
   }
 
@@ -155,12 +224,63 @@ export function LessonViewer() {
   }
 
   const handleSectionComplete = (sectionId: string) => {
-    setCompletedSections(prev => new Set([...prev, sectionId]))
+    setCompletedSections(prev => {
+      const updated = new Set([...prev, sectionId])
+      // Update reading progress based on completed sections
+      const newProgress = Math.round((updated.size / sections.length) * 100)
+      setReadingProgress(newProgress)
+      return updated
+    })
   }
+
+  // Track scroll progress for reading
+  useEffect(() => {
+    if (sections.length === 0) return
+
+    const handleScroll = () => {
+      const scrollContainer = document.documentElement || document.body
+      const scrollTop = scrollContainer.scrollTop || window.pageYOffset
+      const scrollHeight = scrollContainer.scrollHeight - scrollContainer.clientHeight
+      
+      if (scrollHeight > 0) {
+        const scrollProgress = Math.round((scrollTop / scrollHeight) * 100)
+        // Combine scroll progress with section completion progress
+        const sectionProgress = (completedSections.size / sections.length) * 100
+        // Use the higher of the two (user has read more)
+        const totalProgress = Math.max(scrollProgress, sectionProgress, readingProgress)
+        
+        if (totalProgress > readingProgress) {
+          setReadingProgress(totalProgress)
+        }
+      }
+    }
+
+    // Throttle scroll events
+    let ticking = false
+    const throttledScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll()
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', throttledScroll, { passive: true })
+    return () => window.removeEventListener('scroll', throttledScroll)
+  }, [sections.length, completedSections.size, readingProgress])
 
   const handleNext = () => {
     if (currentSection < sections.length - 1) {
-      setCurrentSection(prev => prev + 1)
+      setCurrentSection(prev => {
+        const next = prev + 1
+        // Mark current section as read when moving to next
+        if (sections[prev]) {
+          handleSectionComplete(sections[prev].id)
+        }
+        return next
+      })
     }
   }
 
@@ -175,18 +295,46 @@ export function LessonViewer() {
 
     setCompleting(true)
     try {
-      // Record in Supabase
-      const { error: supabaseError } = await supabase
+      // Record completion in Supabase with 100% progress
+      // First try to update existing record
+      const { data: existingProgress } = await supabase
         .from('user_lesson_progress')
-        .insert({
-          user_id: user.id,
-          lesson_id: lesson.id,
-          completed_at: new Date().toISOString(),
-          score: 1.0,
-        })
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('lesson_id', lesson.id)
+        .maybeSingle() // Use maybeSingle to avoid errors if not found
+
+      const completionData = {
+        user_id: user.id,
+        lesson_id: lesson.id,
+        completed_at: new Date().toISOString(),
+        score: 1.0,
+        progress_percentage: 100,
+      }
+
+      let supabaseError = null
+      if (existingProgress?.id) {
+        // Update existing record
+        const { error } = await supabase
+          .from('user_lesson_progress')
+          .update(completionData)
+          .eq('id', existingProgress.id)
+        supabaseError = error
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('user_lesson_progress')
+          .insert(completionData)
+        supabaseError = error
+      }
 
       if (supabaseError) {
         console.error('Error saving to Supabase:', supabaseError)
+        // Show error to user
+        alert(`Error saving progress: ${supabaseError.message || 'Unknown error'}`)
+      } else {
+        console.log('✅ Lesson completion saved successfully!')
+        setIsCompleted(true)
       }
 
       // Also record in Jaseci for mastery tracking
@@ -196,16 +344,27 @@ export function LessonViewer() {
         console.error('Error recording in Jaseci:', jaseciError)
       }
 
+      setReadingProgress(100)
       await refreshProgress()
-      navigate('/dashboard')
+
+      // Navigate to quiz for the completed lesson
+      navigate(`/quiz/${lesson.id}`)
     } catch (error) {
       console.error('Error completing lesson:', error)
+      // Still navigate to quiz even if there's an error
+      navigate(`/quiz/${lesson.id}`)
     } finally {
       setCompleting(false)
     }
   }
 
   const allSectionsCompleted = sections.length > 0 && completedSections.size === sections.length
+  // Allow completion if user has read 80%+ or is on the last section
+  const canComplete = sections.length > 0 && (
+    allSectionsCompleted || 
+    readingProgress >= 80 || 
+    currentSection === sections.length - 1
+  )
 
   if (loading) {
     return (
@@ -262,10 +421,12 @@ export function LessonViewer() {
               </div>
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{lesson.title}</h1>
             </div>
-            {allSectionsCompleted && (
+            {(isCompleted || allSectionsCompleted) && (
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle2 className="w-6 h-6" />
-                <span className="font-semibold">All Sections Complete</span>
+                <span className="font-semibold">
+                  {isCompleted ? 'Lesson Completed!' : 'All Sections Complete'}
+                </span>
               </div>
             )}
           </div>
@@ -275,7 +436,7 @@ export function LessonViewer() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">
-              Progress: {completedSections.size} / {sections.length} sections
+              Progress: {readingProgress}% ({completedSections.size} / {sections.length} sections)
             </span>
             <span className="text-sm text-gray-500">
               Section {currentSection + 1} of {sections.length}
@@ -285,7 +446,7 @@ export function LessonViewer() {
             <div
               className="h-full transition-all duration-300 rounded-full"
               style={{ 
-                width: `${(completedSections.size / sections.length) * 100}%`,
+                width: `${readingProgress}%`,
                 background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)'
               }}
             />
@@ -293,13 +454,15 @@ export function LessonViewer() {
         </div>
 
         {/* Current Section Card */}
-        <LessonCard
-          section={sections[currentSection]}
-          sectionIndex={currentSection}
-          totalSections={sections.length}
-          onComplete={handleSectionComplete}
-          isCompleted={completedSections.has(sections[currentSection].id)}
-        />
+        {sections[currentSection] && (
+          <LessonCard
+            section={sections[currentSection]}
+            sectionIndex={currentSection}
+            totalSections={sections.length}
+            onComplete={handleSectionComplete}
+            isCompleted={completedSections.has(sections[currentSection].id)}
+          />
+        )}
 
         {/* Navigation */}
         <div className="flex items-center justify-between mb-6">
@@ -330,10 +493,12 @@ export function LessonViewer() {
           ) : (
             <button
               onClick={handleComplete}
-              disabled={completing || !allSectionsCompleted}
+              disabled={completing || !canComplete}
               className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               style={{ 
-                background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)'
+                background: canComplete && !completing 
+                  ? 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)'
+                  : 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)'
               }}
             >
               {completing ? 'Completing...' : 'Complete Lesson'}

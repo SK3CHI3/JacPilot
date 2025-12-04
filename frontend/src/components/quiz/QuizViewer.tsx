@@ -20,9 +20,25 @@ export function QuizViewer({ quiz, onSubmit, loading }: QuizViewerProps) {
   }
 
   const questions = Array.isArray(quiz.questions) ? quiz.questions : []
+  
+  // If no questions at all, show error
+  if (questions.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4 text-gray-900">No Questions Available</h2>
+          <p className="text-gray-600 mb-6">
+            The quiz could not be generated. Please try again or contact support.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const question = questions[currentQuestion]
 
-  if (!question) {
+  // Only show "Quiz Complete" if we've gone through all questions
+  if (!question && currentQuestion >= questions.length) {
     return (
       <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
         <div className="text-center">
