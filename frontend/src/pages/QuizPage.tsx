@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Quiz } from '../types'
 import { generateQuiz, submitQuiz } from '../services/jacClient'
-import { quizzes, supabase } from '../services/supabase'
+import { quizzes } from '../services/supabase'
 import { useUser } from '../contexts/UserContext'
 import { QuizViewer } from '../components/quiz/QuizViewer'
+import { Button } from '../components/common/Button'
 
 export default function QuizPage() {
   const { id } = useParams<{ id: string }>()
@@ -23,16 +24,58 @@ export default function QuizPage() {
 
     setLoading(true)
     try {
-      // Try to get existing quiz from Supabase
+      // Try to get existing quiz from Supabase first
       const { data, error } = await quizzes.getByLesson(id)
       if (!error && data) {
         setQuiz(data as Quiz)
-      } else {
-        // Generate new quiz via Jaseci
-        const response = await generateQuiz(id, user.id)
-        if (response.success && response.data) {
-          setQuiz(response.data as Quiz)
+        return
+      }
+      
+      // If no quiz found, generate via Jaseci walker
+      // Hackathon requirement: Frontend MUST use spawnWalker(), not direct API calls
+      const response = await generateQuiz(id, user.id)
+      if (response.success && response.data) {
+        const quizData = response.data as Quiz
+        let questions = quizData.questions || []
+        
+        // byLLM returns raw_response with JSON string - parse it
+        if ((!questions || questions.length === 0) && quizData.raw_response) {
+          console.log('Parsing byLLM raw_response for quiz questions')
+          try {
+            // byLLM often wraps JSON in markdown code blocks
+            let rawResponse = quizData.raw_response as string
+            
+            // Remove markdown code block wrappers if present
+            if (rawResponse.includes('```json')) {
+              rawResponse = rawResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '')
+            } else if (rawResponse.includes('```')) {
+              rawResponse = rawResponse.replace(/```\n?/g, '')
+            }
+            
+            const parsed = JSON.parse(rawResponse.trim())
+            if (parsed.questions && Array.isArray(parsed.questions)) {
+              questions = parsed.questions.map((q: Record<string, unknown>, idx: number) => ({
+                id: q.id || `q${idx + 1}`,
+                type: q.type || 'multiple_choice',
+                question: q.question,
+                options: q.options,
+                correct_answer: q.correct_answer ?? q.correct_answer_index ?? 0,
+                explanation: q.explanation || ''
+              }))
+              console.log('Parsed', questions.length, 'questions from byLLM response')
+            }
+          } catch (parseError) {
+            console.error('Failed to parse byLLM response:', parseError)
+          }
         }
+        
+        setQuiz({
+          ...quizData,
+          questions,
+          id: quizData.id || quizData.quiz_id || `quiz-${id}`
+        } as Quiz)
+      } else {
+        throw new Error(response.error || 'Failed to generate quiz')
       }
     } catch (error) {
       console.error('Error loading quiz:', error)
@@ -46,31 +89,10 @@ export default function QuizPage() {
 
     setSubmitting(true)
     try {
-      // Evaluate quiz via Jaseci
       const response = await submitQuiz(user.id, quiz.id, answers)
-      
-      if (response.success && response.data) {
-        const result = response.data as any
-        const score = result.score || 0
-        
-        // Save to Supabase
-        try {
-          await supabase.from('quiz_attempts').insert({
-            user_id: user.id,
-            quiz_id: quiz.id,
-            score: score,
-            time_taken: 0, // Would calculate actual time
-            answers: answers,
-            attempted_at: new Date().toISOString(),
-          })
-        } catch (supabaseError) {
-          console.error('Error saving quiz attempt to Supabase:', supabaseError)
-        }
-
+      if (response.success) {
         await refreshProgress()
         navigate('/dashboard')
-      } else {
-        console.error('Quiz evaluation failed:', response.error)
       }
     } catch (error) {
       console.error('Error submitting quiz:', error)
@@ -81,11 +103,8 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#FF6B35] border-t-transparent mb-4"></div>
-          <p className="text-gray-600">Loading quiz...</p>
-        </div>
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="text-white">Loading quiz...</div>
       </div>
     )
   }
@@ -93,29 +112,53 @@ export default function QuizPage() {
   if (!quiz) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Quiz not found</h2>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-6 py-3 rounded-xl font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)' }}
-          >
-            Back to Dashboard
-          </button>
+        <div className="text-center max-w-md px-6">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Quiz Not Available</h2>
+          <p className="text-gray-600 mb-4">
+            The quiz for this lesson could not be generated. This may be because:
+          </p>
+          <ul className="text-left text-sm text-gray-600 mb-6 space-y-2">
+            <li>• Jaseci server is not running (required for quiz generation)</li>
+            <li>• Quiz generation walker is unavailable</li>
+            <li>• No quiz exists for this lesson yet</li>
+          </ul>
+          <p className="text-sm text-gray-500 mb-6">
+            <strong>Note:</strong> According to hackathon guidelines, all quiz generation must go through Jaseci walkers using <code>spawnWalker()</code>. Please ensure the Jaseci server is running.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-6 py-3 rounded-xl font-semibold text-white"
+              style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)' }}
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={() => loadQuiz()}
+              className="px-6 py-3 rounded-xl font-semibold border-2"
+              style={{ 
+                borderColor: '#FF6B35',
+                color: '#FF6B35'
+              }}
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white py-8">
-      <div className="container mx-auto px-6 max-w-4xl">
-        <button
+    <div className="min-h-screen bg-dark-bg py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <Button
+          variant="ghost"
           onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-gray-600 hover:text-[#FF6B35] mb-6 transition-colors"
+          className="mb-6"
         >
-          <span>←</span> Back to Dashboard
-        </button>
+          ← Back to Dashboard
+        </Button>
 
         <QuizViewer quiz={quiz} onSubmit={handleSubmit} loading={submitting} />
       </div>

@@ -48,11 +48,13 @@ export interface Mastery {
 // Quiz Types
 export interface Quiz {
   id: string
+  quiz_id?: string // From Jaseci walker
   lesson_id: string
   difficulty: number // 1-5
   questions: Question[]
   created_at: string
   jaseci_quiz_id?: string
+  raw_response?: string // byLLM response string
 }
 
 export interface Question {
