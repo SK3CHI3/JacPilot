@@ -79,8 +79,13 @@ jsctl jac build backend/jac/main.jac
 ### Database Setup
 
 1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Run the SQL migrations from `database/migrations/` (to be created)
+2. Run the SQL files from `backend/data/`:
+   - `FINAL_SETUP.sql` - Initial schema and seed data
+   - `complete_lesson_content.sql` - Lesson content
+   - `complete_exercises.sql` - Practice exercises
 3. Update your `.env` file with Supabase credentials
+
+For detailed setup instructions, see `docs/SETUP.md`.
 
 ## 📁 Project Structure
 
@@ -142,10 +147,16 @@ JacPilot/
 ## 📚 Documentation
 
 See the `docs/` folder for detailed documentation:
+- `SETUP.md` - Complete setup guide
+- `QUICK_REFERENCE.md` - Quick reference guide
 - `PROJECT_PLAN.md` - Comprehensive project plan
 - `FRONTEND_DESIGN_PLAN.md` - Frontend design specifications
 - `AGENT_SPECIFICATIONS.md` - Agent implementation details
 - `ARCHITECTURE_DECISIONS.md` - Design decisions
+- `AI_USAGE.md` - AI integration details
+- `JAC_LEARNING_PATH.md` - Learning path overview
+
+**Quick Start**: See `QUICK_START.md` in the root directory for a 5-minute setup guide.
 
 ## 🧪 Development
 
