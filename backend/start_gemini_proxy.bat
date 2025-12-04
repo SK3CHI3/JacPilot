@@ -20,11 +20,12 @@ if errorlevel 1 (
 REM Navigate to helpers directory
 cd helpers
 
-REM Set environment variables
-set GEMINI_API_KEY=%GEMINI_API_KEY%
+REM Set GEMINI_API_KEY - use environment variable or default
 if "%GEMINI_API_KEY%"=="" (
-    echo WARNING: GEMINI_API_KEY environment variable is not set
-    echo Set it in your .env file or system environment variables
+    set GEMINI_API_KEY=AIzaSyCH5gYFaTRPkCvI92Rlp--TgVgdR9aW-C0
+    echo Using GEMINI_API_KEY from script
+) else (
+    echo Using GEMINI_API_KEY from environment
 )
 
 REM Start Flask proxy service
