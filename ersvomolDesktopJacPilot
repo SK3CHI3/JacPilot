@@ -1,0 +1,10 @@
+[33m90ef290[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m docs: Add agent interaction diagram and evaluation metrics documentation
+[33mc246242[m docs: Update hackathon compliance and byLLM configuration documentation
+[33m62038df[m feat(lessons): Improve lesson page UI and Supabase integration
+[33m3f4ac69[m fix(components): Fix unused imports and quiz display logic
+[33m8acee9d[m fix(frontend): Fix Gemini API URL and update authentication token
+[33m1f1974c[m feat(frontend): Parse byLLM raw_response for quiz questions with markdown handling
+[33m9447c7d[m feat(backend): Add GEMINI_API_KEY environment setup to startup scripts
+[33ma6eef29[m fix(backend): Update Gemini API to v1beta with gemini-2.5-flash model
+[33ma9c1f4d[m feat(byLLM): Implement proper byLLM integration for quiz generation and answer evaluation
+[33m5a0ec87[m chore: remove temporary generation scripts and SQL files

@@ -68,8 +68,8 @@ node quiz {
 walker learning_planner {
     has user_id: str;
     has action: str = "plan_next_lesson";
-    
-    with entry {
+
+    can entry with entry {
         if (action == "plan_next_lesson") {
             # Query Supabase for user's completed lessons using Python helper
             # Note: HTTP calls temporarily disabled - using placeholders
@@ -130,16 +130,25 @@ walker quiz_generator {
     has lesson_content: str = "";
     has lesson_title: str = "";
     has concepts: list = [];
-    
-    with entry {
+
+    can entry with entry {
+        # Pull instance fields with safe fallbacks
+        lesson_id_val = self.lesson_id if hasattr(self, "lesson_id") else "";
+        user_id_val = self.user_id if hasattr(self, "user_id") else "";
+        lesson_title_val = self.lesson_title if hasattr(self, "lesson_title") else "";
+        lesson_content_val = self.lesson_content if hasattr(self, "lesson_content") else "";
+        
         # Calculate difficulty based on user mastery (placeholder for now)
         difficulty = 2;
+        
+        # Use instance concepts safely
+        concepts_list = self.concepts if hasattr(self, "concepts") else [];
         
         # Build topics list for byLLM
         topics_list = [];
         # Handle concepts safely - check if it's a valid list before iterating
-        if (concepts != None && concepts != [] && hasattr(concepts, "__iter__")) {
-            for concept in concepts {
+        if (concepts_list != None && concepts_list != [] && hasattr(concepts_list, "__iter__")) {
+            for concept in concepts_list {
                 if (hasattr(concept, "get")) {
                     topics_list += concept.get("name", "");
                 } else {
@@ -152,8 +161,7 @@ walker quiz_generator {
         # byLLM PROMPT DOCUMENTATION - Quiz Generation (Generative)
         # ============================================================
         # Role: Content Generator
-        # Model: gemini-pro
-        # Temperature: 0.7 (balanced creativity/consistency)
+        # Model: gemini/gemini-2.5-flash (via byLLM)
         # Type: Generative AI - Creates quiz questions from lesson content
         #
         # Prompt Structure:
@@ -163,29 +171,26 @@ walker quiz_generator {
         # 4. Format: JSON structure specification
         #
         # Expected Output: JSON with questions array containing:
-        #   - Multiple choice: id, type, question, options[], correct_answer, explanation
-        #   - Free text: id, type, question, max_score, explanation
-        #   - Coding: id, type, question, starter_code, test_cases[]
+        #   - Multiple choice: id, type, question, options[], correct_answer_index, explanation
         # ============================================================
         
         # Build prompt for byLLM
         topics_str = ", ".join(topics_list) if topics_list else "Jaseci programming concepts";
-        lesson_title_str = lesson_title if lesson_title else "Jaseci Concepts";
-        lesson_content_str = lesson_content if lesson_content else "Jaseci programming concepts";
+        lesson_title_str = lesson_title_val if lesson_title_val else "Jaseci Concepts";
+        lesson_content_str = lesson_content_val if lesson_content_val else "Jaseci programming concepts";
         
-        prompt = "Generate a difficulty level " + str(difficulty) + " quiz about Jaseci and Jac programming. Lesson Title: " + lesson_title_str + ". Topics: " + topics_str + ". Create 5 multiple choice questions. Return valid JSON with questions array where each has id, type, question, options array, correct_answer index, and explanation.";
+        prompt = "Generate a difficulty level " + str(difficulty) + " quiz about Jaseci and Jac programming. Lesson Title: " + lesson_title_str + ". Topics: " + topics_str + ". Create 5 multiple choice questions. Return valid JSON with questions array where each has id, type, question, options array, correct_answer_index number, and explanation.";
         
         # Use byLLM to generate quiz (generative use - Hackathon requirement)
         quiz_response = generate_quiz_content(prompt);
         
-        # byLLM returns a string containing JSON
-        # Return the raw response for frontend to parse
+        # Return quiz data with byLLM response
         report {
             "success": True,
-            "quiz_id": "quiz-" + lesson_id + "-" + user_id,
+            "quiz_id": "quiz-" + lesson_id_val + "-" + user_id_val,
             "difficulty": difficulty,
             "questions": [],
-            "raw_response": quiz_response
+            "raw_response": str(quiz_response) if quiz_response else "{}"
         };
     }
 }
@@ -200,8 +205,8 @@ walker answer_evaluator {
     has question_context: dict = {};
     has question_type: str = "free_text";
     has action: str = "evaluate_answer";
-    
-    with entry {
+
+    can entry with entry {
         if (action == "evaluate_answer") {
             # ============================================================
             # byLLM PROMPT DOCUMENTATION - Answer Evaluation (Analytical)
@@ -226,7 +231,7 @@ walker answer_evaluator {
                 "feedback": "Evaluation completed via byLLM",
                 "strengths": [],
                 "improvements": [],
-                "raw_response": evaluation_response
+                "raw_response": str(evaluation_response) if evaluation_response else "{}"
             };
         } else {
             report {
@@ -240,8 +245,8 @@ walker answer_evaluator {
 walker progress_tracker {
     has user_id: str;
     has action: str = "get_progress_summary";
-    
-    with entry {
+
+    can entry with entry {
         if (action == "get_progress_summary") {
             # Query Supabase for real progress data
             lessons_completed = 0;
@@ -322,8 +327,8 @@ walker progress_tracker {
 walker skill_analyzer {
     has user_id: str;
     has action: str = "generate_skill_map";
-    
-    with entry {
+
+    can entry with entry {
         if (action == "generate_skill_map") {
             # Query Supabase for concepts
             # TODO: HTTP calls disabled - need Python requests
@@ -425,8 +430,8 @@ walker skill_analyzer {
 
 walker get_lesson {
     has lesson_id: str = "";
-    
-    with entry {
+
+    can entry with entry {
         # Query Supabase for lesson data
         # TODO: HTTP calls disabled - need Python requests
         # lesson_data_response = requests.get(...)
@@ -464,7 +469,14 @@ walker get_lesson {
 }
 
 walker init {
-    with entry {
+    can entry with entry {
         report "JacPilot backend initialized! All models and walkers loaded.";
+    }
+}
+
+# Diagnostic walker to verify reports are returned
+walker ping {
+    can entry with entry {
+        report "pong";
     }
 }

@@ -8,7 +8,8 @@ import type { WalkerResponse } from '../types'
 
 // Configuration - will be set via environment variables
 const JASECI_API_URL = import.meta.env.VITE_JASECI_API_URL || 'http://localhost:8000'
-const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MzFhOTcyNDNlMTBhNTAyOWU2OWNmOSIsImVtYWlsIjoiYWRtaW5AamFjcGlsb3QuY29tIiwicm9vdF9pZCI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsImlzX2FjdGl2YXRlZCI6dHJ1ZSwiaXNfYWRtaW4iOnRydWUsImV4cGlyYXRpb24iOjE3NjQ5MTA4MjYsInN0YXRlIjoiRUk4c0NObDQifQ.EIfUqO8pXm-baanLXjFzpSl4WiE8nMvhygVVKy0zKnk'
+// Hardcoded token takes priority - .env has stale token that causes 401 errors
+const JASECI_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MzFhOTcyNDNlMTBhNTAyOWU2OWNmOSIsImVtYWlsIjoiYWRtaW5AamFjcGlsb3QuY29tIiwicm9vdF9pZCI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsImlzX2FjdGl2YXRlZCI6dHJ1ZSwiaXNfYWRtaW4iOnRydWUsImV4cGlyYXRpb24iOjE3NjQ5MjY4NTksInN0YXRlIjoid3BWZWF0QlMifQ.E8hscTcY9irG_vRKeqtvgzOuiYOB2Sv8AVNWAXvmqoE'
 
 // Debug: Log if API key is missing (only in dev)
 if (import.meta.env.DEV && !JASECI_API_KEY) {
