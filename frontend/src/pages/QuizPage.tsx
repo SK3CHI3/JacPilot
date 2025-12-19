@@ -14,6 +14,8 @@ export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const [quizResults, setQuizResults] = useState<any>(null)
 
   useEffect(() => {
     loadQuiz()
@@ -38,12 +40,18 @@ export default function QuizPage() {
       let quizData: Partial<Quiz> = {}
       
       if (response.success && response.data) {
-        quizData = response.data as Quiz
+        // Extract quiz data from reports array (Jaseci returns data in reports[0])
+        const responseData = response.data as any
+        if (responseData.reports && responseData.reports.length > 0) {
+          quizData = responseData.reports[0] as Quiz
+        } else {
+          quizData = response.data as Quiz
+        }
+        
         questions = quizData.questions || []
         
         // byLLM returns raw_response with JSON string - parse it
         if ((!questions || questions.length === 0) && quizData.raw_response) {
-          console.log('Parsing byLLM raw_response for quiz questions')
           try {
             // byLLM often wraps JSON in markdown code blocks
             let rawResponse = quizData.raw_response as string
@@ -56,6 +64,7 @@ export default function QuizPage() {
             }
             
             const parsed = JSON.parse(rawResponse.trim())
+            
             if (parsed.questions && Array.isArray(parsed.questions)) {
               questions = parsed.questions.map((q: Record<string, unknown>, idx: number) => ({
                 id: q.id || `q${idx + 1}`,
@@ -65,24 +74,23 @@ export default function QuizPage() {
                 correct_answer: q.correct_answer ?? q.correct_answer_index ?? 0,
                 explanation: q.explanation || ''
               }))
-              console.log('Parsed', questions.length, 'questions from byLLM response')
             }
           } catch (parseError) {
-            console.error('Failed to parse byLLM response:', parseError)
+            // Silent fail - will use fallback questions
           }
         }
       }
       
       // Fallback: if still no questions, use static Jaseci quiz
       if (!questions || questions.length === 0) {
-        console.log('Using fallback quiz questions')
         questions = [
           {
             id: 'q1',
             type: 'multiple_choice',
             question: 'What is Jaseci?',
             options: ['A web framework', 'An AI platform for graph-based agents', 'A database', 'A programming IDE'],
-            correct_answer: 1,
+            correct_answer: '1',
+            max_score: 1,
             explanation: 'Jaseci is an open-source platform for building AI-powered graph-based applications.'
           },
           {
@@ -90,7 +98,8 @@ export default function QuizPage() {
             type: 'multiple_choice',
             question: 'What is a walker in Jac?',
             options: ['A data type', 'A loop construct', 'A computational agent that traverses graphs', 'A variable'],
-            correct_answer: 2,
+            correct_answer: '2',
+            max_score: 1,
             explanation: 'Walkers are computational agents that traverse and operate on graph structures in Jaseci.'
           },
           {
@@ -98,7 +107,8 @@ export default function QuizPage() {
             type: 'multiple_choice',
             question: 'What programming paradigm does Jac primarily use?',
             options: ['Functional programming', 'Object-Oriented programming', 'Object-Spatial Programming (OSP)', 'Procedural programming'],
-            correct_answer: 2,
+            correct_answer: '2',
+            max_score: 1,
             explanation: 'Jac uses Object-Spatial Programming (OSP), which combines OOP with graph-based spatial reasoning.'
           },
           {
@@ -106,7 +116,8 @@ export default function QuizPage() {
             type: 'multiple_choice',
             question: 'What is byLLM used for in Jaclang?',
             options: ['Database queries', 'File I/O', 'Integrating AI/LLM capabilities', 'Network requests'],
-            correct_answer: 2,
+            correct_answer: '2',
+            max_score: 1,
             explanation: 'byLLM allows Jaclang programs to integrate with Large Language Models for AI functionality.'
           },
           {
@@ -114,7 +125,8 @@ export default function QuizPage() {
             type: 'multiple_choice',
             question: 'What is a node in Jaseci?',
             options: ['A function', 'A vertex in the graph with properties', 'A loop variable', 'A method'],
-            correct_answer: 1,
+            correct_answer: '1',
+            max_score: 1,
             explanation: 'Nodes are vertices in the Jaseci graph that can hold data and be connected by edges.'
           }
         ]
@@ -137,10 +149,17 @@ export default function QuizPage() {
 
     setSubmitting(true)
     try {
-      const response = await submitQuiz(user.id, quiz.id, answers)
+      // Pass questions along with answers for evaluation
+      const response = await submitQuiz(user.id, quiz.id, answers, quiz.questions)
+      
       if (response.success) {
+        // Extract results from response
+        const responseData = response.data as any
+        const results = responseData?.reports?.[0] || responseData
+        
+        setQuizResults(results)
+        setShowResults(true)
         await refreshProgress()
-        navigate('/dashboard')
       }
     } catch (error) {
       console.error('Error submitting quiz:', error)
@@ -191,6 +210,100 @@ export default function QuizPage() {
             >
               Retry
             </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show results after quiz submission
+  if (showResults && quizResults) {
+    const score = quizResults.score || 0
+    const correctCount = quizResults.correct_answers || 0
+    const totalQuestions = quizResults.total_questions || 5
+    const questionResults = quizResults.results || []
+    
+    return (
+      <div className="min-h-screen bg-dark-bg py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold mb-4" style={{ color: '#FF6B35' }}>
+                🎉 Quiz Completed!
+              </h1>
+              <div className="text-6xl mb-4">
+                {score >= 0.8 ? '🌟' : score >= 0.6 ? '👏' : '💪'}
+              </div>
+              <p className="text-4xl font-bold mb-2" style={{ color: '#FF6B35' }}>
+                {Math.round(score * 100)}%
+              </p>
+              <p className="text-lg text-gray-600 mb-6">
+                {correctCount} out of {totalQuestions} correct
+              </p>
+              
+              {/* AI Feedback Section */}
+              <div className="mb-8 p-6 rounded-lg" style={{ background: 'linear-gradient(135deg, #FFF5F0 0%, #FFF9E6 100%)', border: '2px solid #FFD23F' }}>
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">🤖</div>
+                  <div className="flex-1 text-left">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: '#FF6B35' }}>
+                      AI Feedback
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">
+                      {quizResults.feedback || 'Great job! Keep learning!'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Show individual question results */}
+            {questionResults.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-bold mb-4 text-gray-800">Your Answers:</h2>
+                <div className="space-y-4">
+                  {questionResults.map((result: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border-2 ${
+                        result.is_correct
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-red-500 bg-red-50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl">
+                          {result.is_correct ? '✅' : '❌'}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 mb-2">
+                            Q{idx + 1}: {result.question}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Your answer: <span className="font-semibold">{result.user_answer}</span>
+                          </p>
+                          {!result.is_correct && (
+                            <p className="text-sm text-gray-600">
+                              Correct answer: <span className="font-semibold text-green-700">{result.correct_answer}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="text-center">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-8 py-4 rounded-xl font-semibold text-white text-lg shadow-lg hover:shadow-xl transition-all"
+                style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #FFD23F 100%)' }}
+              >
+                Continue to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>

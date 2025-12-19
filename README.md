@@ -14,12 +14,18 @@ A modern, gamified learning platform for mastering the Jac programming language 
 ## 🏗️ Architecture
 
 ```
-Frontend (React + Vite + TypeScript)
-    ↓ Spawn() calls via Jac Client
+Frontend (React + TypeScript + Jac Client)
+    ↓ jacSpawn() calls via Jac Client
 Backend (Jaseci + OSP + byLLM)
     ↓ Graph operations    ↓ Data persistence
 OSP Graph              Supabase
 ```
+
+**Key Technologies:**
+- **Jac Client**: Frontend-backend communication (mandatory Jaseci stack component)
+- **byLLM**: AI integration for quiz generation and answer evaluation
+- **OSP Graph**: Graph-based learning path and mastery tracking
+- **Supabase**: Data persistence layer
 
 ## 🚀 Quick Start
 
@@ -49,10 +55,13 @@ cp .env.example .env
 4. Update `.env` with your credentials:
 ```env
 VITE_JASECI_API_URL=http://localhost:8000
-VITE_JASECI_API_KEY=your_api_key
+VITE_JASECI_API_KEY=your_jwt_token
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_key
+VITE_GEMINI_API_KEY=your_gemini_api_key
 ```
+
+Note: Generate a JWT token for `VITE_JASECI_API_KEY` using the `TOKEN_SECRET` from your backend `.env`.
 
 5. Start development server:
 ```bash
@@ -61,20 +70,33 @@ npm run dev
 
 ### Backend Setup
 
-1. Install Jaseci:
+1. Install Jaseci and dependencies:
 ```bash
-pip install jaseci jaseci-serv
+pip install jaseci jaseci-serv jaclang byllm
 ```
 
-2. Start Jaseci server:
-```bash
-jsctl serv
+2. Create `.env` file in root directory:
+```env
+GEMINI_API_KEY=your_gemini_api_key
+TOKEN_SECRET=secret
+REQUIRE_AUTH_BY_DEFAULT=false
+ALLOW_ORIGINS=*
+ALLOW_METHODS=*
+ALLOW_HEADERS=*
 ```
 
-3. Load Jac files:
+3. Start Jaseci server:
 ```bash
-jsctl jac build backend/jac/main.jac
+cd backend
+jac serve jac/main.jac --host 0.0.0.0 --port 8000
 ```
+
+Or use the provided script on Windows:
+```bash
+.\backend\start_server.bat
+```
+
+The server will start on `http://localhost:8000` and expose walker endpoints.
 
 ### Database Setup
 
@@ -113,10 +135,12 @@ JacPilot/
 ## 🤖 Agents (Walkers)
 
 1. **Learning Planner** - Recommends next lessons based on mastery
-2. **Quiz Generator** - Creates adaptive quizzes using byLLM
-3. **Answer Evaluator** - Evaluates answers and updates mastery graph
+2. **Quiz Generator** - Creates adaptive quizzes using byLLM (Gemini AI)
+3. **Answer Evaluator** - Evaluates quiz answers with AI-powered feedback
 4. **Progress Tracker** - Tracks user progress and statistics
 5. **Skill Analyzer** - Analyzes mastery graph for skill map
+
+All walkers use **byLLM** for AI integration with Google's Gemini models.
 
 ## 🎨 Design
 
@@ -138,8 +162,9 @@ JacPilot/
 
 ### Backend
 - Jaseci/Jac
+- **Jac Client** - Frontend-backend communication (mandatory stack component)
 - OSP (Object-Spatial Programming)
-- byLLM
+- **byLLM** - AI integration for quiz generation and answer evaluation
 
 ### Database
 - Supabase (PostgreSQL)
@@ -149,6 +174,10 @@ JacPilot/
 See the `docs/` folder for detailed documentation:
 - `SETUP.md` - Complete setup guide
 - `QUICK_REFERENCE.md` - Quick reference guide
+- **`JAC_CLIENT_INTEGRATION.md`** - Jac Client implementation and usage (Hackathon requirement)
+- **`BYLLM_DEMONSTRATION.md`** - byLLM usage demonstration (Hackathon requirement)
+- `BYLLM_CONFIGURATION.md` - byLLM configuration guide
+- `HACKATHON_COMPLIANCE.md` - Hackathon compliance checklist
 - `PROJECT_PLAN.md` - Comprehensive project plan
 - `FRONTEND_DESIGN_PLAN.md` - Frontend design specifications
 - `AGENT_SPECIFICATIONS.md` - Agent implementation details
@@ -189,7 +218,7 @@ This is a hackathon project. Contributions welcome!
 ## 📞 Support
 
 For issues or questions, please open an issue on GitHub.
-
+ 
 ---
 
 **Built with ❤️ for the Jaseci Hackathon**

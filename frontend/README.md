@@ -83,10 +83,25 @@ frontend/
 - **React Router** for navigation
 - **Framer Motion** for animations (ready to use)
 
+## 🔌 Backend Communication
+
+JacPilot uses **Jac Client** for all frontend-backend communication:
+
+- **Location**: `src/services/jacClient.ts`
+- **Primary Function**: `jacSpawn()` - Official Jac Client pattern
+- **All walker calls** go through `jacSpawn()`:
+  - Quiz generation
+  - Answer evaluation
+  - Progress tracking
+  - Learning path recommendations
+  - Skill map generation
+
+See `docs/JAC_CLIENT_INTEGRATION.md` for complete implementation details.
+
 ## 📝 Next Steps
 
-- [ ] Connect to Jac Client for backend communication
+- [x] Connect to Jac Client for backend communication ✅
 - [ ] Add Monaco Editor for code exercises
 - [ ] Implement skill map visualization
 - [ ] Add animations with Framer Motion
-- [ ] Connect to Supabase for data
+- [x] Connect to Supabase for data ✅

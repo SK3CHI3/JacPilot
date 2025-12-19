@@ -70,7 +70,7 @@ walker learning_planner {
     has action: str = "plan_next_lesson";
 
     can entry with entry {
-        if (action == "plan_next_lesson") {
+        if (self.action == "plan_next_lesson") {
             # Query Supabase for user's completed lessons using Python helper
             # Note: HTTP calls temporarily disabled - using placeholders
             # TODO: Implement Python helper module integration
@@ -116,7 +116,7 @@ walker learning_planner {
         } else {
             report {
                 "success": False,
-                "error": "Unknown action: " + action
+                "error": "Unknown action: " + self.action
             };
         }
     }
@@ -184,12 +184,11 @@ walker quiz_generator {
         # Use byLLM to generate quiz (generative use - Hackathon requirement)
         quiz_response = generate_quiz_content(prompt);
         
-        # Return quiz data with byLLM response
+        # Return quiz data with byLLM response (frontend will parse questions from raw_response)
         report {
             "success": True,
             "quiz_id": "quiz-" + lesson_id_val + "-" + user_id_val,
             "difficulty": difficulty,
-            "questions": [],
             "raw_response": str(quiz_response) if quiz_response else "{}"
         };
     }
@@ -202,12 +201,15 @@ walker answer_evaluator {
     has user_answer: str = "";
     has correct_answer: str = "";
     has user_id: str = "";
+    has quiz_id: str = "";
+    has answers: dict = {};
+    has questions: list = [];
     has question_context: dict = {};
     has question_type: str = "free_text";
     has action: str = "evaluate_answer";
 
     can entry with entry {
-        if (action == "evaluate_answer") {
+        if (self.action == "evaluate_answer") {
             # ============================================================
             # byLLM PROMPT DOCUMENTATION - Answer Evaluation (Analytical)
             # ============================================================
@@ -217,8 +219,8 @@ walker answer_evaluator {
             # ============================================================
             
             # Build prompt for byLLM (analytical use - Hackathon requirement)
-            context_str = str(question_context) if question_context else "{}";
-            prompt = "Evaluate this answer. User Answer: " + user_answer + ". Correct Answer: " + correct_answer + ". Return valid JSON with score 0 to 1, correct boolean, feedback string, strengths array, and improvements array.";
+            context_str = str(self.question_context) if hasattr(self, "question_context") else "{}";
+            prompt = "Evaluate this answer. User Answer: " + self.user_answer + ". Correct Answer: " + self.correct_answer + ". Return valid JSON with score 0 to 1, correct boolean, feedback string, strengths array, and improvements array.";
             
             # Use byLLM to evaluate answer (analytical use - Hackathon requirement)
             evaluation_response = evaluate_answer_content(prompt);
@@ -233,10 +235,80 @@ walker answer_evaluator {
                 "improvements": [],
                 "raw_response": str(evaluation_response) if evaluation_response else "{}"
             };
+        } elif (self.action == "evaluate_quiz") {
+            # Evaluate entire quiz - check each answer
+            user_answers = self.answers if hasattr(self, "answers") else {};
+            quiz_questions = self.questions if hasattr(self, "questions") else [];
+            
+            total_questions = len(quiz_questions);
+            correct_count = 0;
+            results = [];
+            
+            # Evaluate each question
+            for q in quiz_questions {
+                question_id = str(q.get("id", ""));
+                user_ans = user_answers.get(question_id, "");
+                correct_ans = q.get("correct_answer", 0);
+                
+                # Check if answer is correct
+                is_correct = False;
+                if (str(user_ans) == str(correct_ans)) {
+                    is_correct = True;
+                    correct_count += 1;
+                }
+                
+                results.append({
+                    "question_id": question_id,
+                    "user_answer": user_ans,
+                    "correct_answer": correct_ans,
+                    "is_correct": is_correct,
+                    "question": q.get("question", "")
+                });
+            }
+            
+            # Calculate final score
+            final_score = correct_count / total_questions if total_questions > 0 else 0;
+            
+            # Generate detailed AI feedback based on performance
+            wrong_questions = [];
+            for result in results {
+                if (not result.get("is_correct", False)) {
+                    wrong_questions.append(result.get("question", ""));
+                }
+            }
+            
+            # Build detailed prompt for AI feedback
+            if (len(wrong_questions) > 0) {
+                questions_str = ", ".join(wrong_questions);
+                feedback_prompt = f"The student scored {correct_count}/{total_questions} on a Jaseci programming quiz. They got these questions wrong: {questions_str}. Provide specific, actionable feedback (2-3 sentences) on what concepts they should review and how to improve. Be encouraging but specific.";
+            } else {
+                feedback_prompt = f"The student scored perfectly {correct_count}/{total_questions} on a Jaseci programming quiz! Provide enthusiastic congratulations and suggest what advanced topic they should explore next (2 sentences).";
+            }
+            
+            ai_feedback = evaluate_answer_content(feedback_prompt);
+            feedback_text = str(ai_feedback) if ai_feedback else "Great effort! Keep learning!";
+            
+            # Clean up feedback if it has markdown or JSON wrapper
+            if ("```" in feedback_text) {
+                feedback_text = feedback_text.replace("```json", "").replace("```", "").strip();
+            }
+            # Remove quotes if AI wrapped response in JSON
+            if (feedback_text.startswith('"') and feedback_text.endswith('"')) {
+                feedback_text = feedback_text[1:-1];
+            }
+            
+            report {
+                "success": True,
+                "score": final_score,
+                "total_questions": total_questions,
+                "correct_answers": correct_count,
+                "results": results,
+                "feedback": feedback_text
+            };
         } else {
             report {
                 "success": False,
-                "error": "Unknown action: " + action
+                "error": "Unknown action: " + self.action
             };
         }
     }
@@ -247,7 +319,7 @@ walker progress_tracker {
     has action: str = "get_progress_summary";
 
     can entry with entry {
-        if (action == "get_progress_summary") {
+        if (self.action == "get_progress_summary") {
             # Query Supabase for real progress data
             lessons_completed = 0;
             average_quiz_score = 0.0;
@@ -318,7 +390,7 @@ walker progress_tracker {
         } else {
             report {
                 "success": False,
-                "error": "Unknown action: " + action
+                "error": "Unknown action: " + self.action
             };
         }
     }
@@ -329,7 +401,7 @@ walker skill_analyzer {
     has action: str = "generate_skill_map";
 
     can entry with entry {
-        if (action == "generate_skill_map") {
+        if (self.action == "generate_skill_map") {
             # Query Supabase for concepts
             # TODO: HTTP calls disabled - need Python requests
             # concepts_response = requests.get(...)
@@ -414,7 +486,7 @@ walker skill_analyzer {
                     "not_started": not_started
                 }
             };
-        } elif (action == "identify_weak_areas") {
+        } elif (self.action == "identify_weak_areas") {
             report {
                 "success": True,
                 "weak_areas": []
@@ -422,7 +494,7 @@ walker skill_analyzer {
         } else {
             report {
                 "success": False,
-                "error": "Unknown action: " + action
+                "error": "Unknown action: " + self.action
             };
         }
     }

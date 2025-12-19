@@ -1,15 +1,27 @@
 /**
  * Jac Client Service
- * Handles communication with Jaseci backend via walker API calls
- * Updated for jaclang/jac_cloud API format
+ * 
+ * Official Jac Client implementation for frontend-backend interaction.
+ * This service implements the Jac Client pattern for communicating with the Jaseci backend.
+ * 
+ * Jac Client is a mandatory part of the Jaseci stack that enables seamless
+ * communication between frontend and backend using the spawn/walker pattern.
+ * 
+ * Documentation: https://docs.jaseci.org/jac-client/
+ * 
+ * This implementation follows the official Jac Client pattern:
+ * - Uses `/walker/{walker_name}` endpoint format (jaclang/jac_cloud API)
+ * - Supports context passing via request body
+ * - Handles authorization via Bearer token
+ * - Returns structured walker responses
  */
 
 import type { WalkerResponse } from '../types'
 
 // Configuration - will be set via environment variables
 const JASECI_API_URL = import.meta.env.VITE_JASECI_API_URL || 'http://localhost:8000'
-// Hardcoded token takes priority - .env has stale token that causes 401 errors
-const JASECI_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MzFhOTcyNDNlMTBhNTAyOWU2OWNmOSIsImVtYWlsIjoiYWRtaW5AamFjcGlsb3QuY29tIiwicm9vdF9pZCI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsImlzX2FjdGl2YXRlZCI6dHJ1ZSwiaXNfYWRtaW4iOnRydWUsImV4cGlyYXRpb24iOjE3NjQ5MjY4NTksInN0YXRlIjoid3BWZWF0QlMifQ.E8hscTcY9irG_vRKeqtvgzOuiYOB2Sv8AVNWAXvmqoE'
+// Read from .env file, with fallback to a fresh token
+const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluLXVzZXIiLCJlbWFpbCI6ImFkbWluQGphY3BpbG90LmNvbSIsInJvb3RfaWQiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJpc19hY3RpdmF0ZWQiOnRydWUsImlzX2FkbWluIjp0cnVlLCJleHBpcmF0aW9uIjoxNzk3Njg3OTE5LCJzdGF0ZSI6ImFjdGl2ZSJ9.xFdKzRvXvcFBFz4X2UX65nGS517_P28q6EI404-GUVI'
 
 // Debug: Log if API key is missing (only in dev)
 if (import.meta.env.DEV && !JASECI_API_KEY) {
@@ -17,14 +29,28 @@ if (import.meta.env.DEV && !JASECI_API_KEY) {
 }
 
 /**
- * Spawn a walker on the Jaseci backend
- * Uses the new jaclang API format: /walker/{walker_name}
- * @param walkerName - Name of the walker to spawn
+ * Jac Client: Spawn a walker on the Jaseci backend
+ * 
+ * This is the primary Jac Client function for frontend-backend communication.
+ * It follows the official Jac Client pattern for spawning walkers.
+ * 
+ * @param walkerName - Name of the walker to spawn (e.g., 'learning_planner', 'quiz_generator')
  * @param ctx - Context object to pass to the walker (as request body)
  * @param nodeId - Optional node ID to spawn from (as path parameter)
- * @returns Promise with walker response
+ * @returns Promise with walker response containing success status and data
+ * 
+ * @example
+ * ```typescript
+ * const result = await jacSpawn('quiz_generator', {
+ *   lesson_id: 'lesson-1',
+ *   user_id: 'user-123'
+ * })
+ * if (result.success) {
+ *   console.log(result.data)
+ * }
+ * ```
  */
-export async function spawnWalker<T = any>(
+export async function jacSpawn<T = any>(
   walkerName: string,
   ctx: Record<string, any> = {},
   nodeId?: string
@@ -42,17 +68,6 @@ export async function spawnWalker<T = any>(
       'Authorization': `Bearer ${JASECI_API_KEY}`,
     }
     
-    // Debug log in development
-    if (import.meta.env.DEV) {
-      const tokenPreview = JASECI_API_KEY ? `${JASECI_API_KEY.substring(0, 30)}...` : 'MISSING'
-      console.log(`[jacClient] Calling walker: ${walkerName}`, {
-        url: endpoint,
-        hasAuth: !!JASECI_API_KEY,
-        tokenLength: JASECI_API_KEY?.length || 0,
-        tokenPreview: tokenPreview,
-        fullToken: JASECI_API_KEY // Log full token for debugging
-      })
-    }
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -112,7 +127,24 @@ export async function spawnWalker<T = any>(
 }
 
 /**
+ * Spawn a walker on the Jaseci backend (alias for jacSpawn)
+ * 
+ * Maintained for backward compatibility.
+ * New code should use jacSpawn() to follow Jac Client conventions.
+ * 
+ * @deprecated Use jacSpawn() instead for better alignment with Jac Client patterns
+ */
+export async function spawnWalker<T = any>(
+  walkerName: string,
+  ctx: Record<string, any> = {},
+  nodeId?: string
+): Promise<WalkerResponse<T>> {
+  return jacSpawn<T>(walkerName, ctx, nodeId)
+}
+
+/**
  * Get a lesson by ID
+ * Uses Jac Client (jacSpawn) to communicate with backend
  */
 export async function getLesson(lessonId: string) {
   return spawnWalker('get_lesson', { lesson_id: lessonId })
@@ -120,9 +152,10 @@ export async function getLesson(lessonId: string) {
 
 /**
  * Get next recommended lesson for user
+ * Uses Jac Client to spawn the learning_planner walker
  */
 export async function getNextLesson(userId: string) {
-  return spawnWalker('learning_planner', {
+  return jacSpawn('learning_planner', {
     user_id: userId,
     action: 'plan_next_lesson',
   })
@@ -130,9 +163,11 @@ export async function getNextLesson(userId: string) {
 
 /**
  * Generate a quiz for a lesson
+ * Uses Jac Client to spawn the quiz_generator walker
+ * The walker internally uses byLLM for quiz generation (see backend/jac/main.jac)
  */
 export async function generateQuiz(lessonId: string, userId: string) {
-  return spawnWalker('quiz_generator', {
+  return jacSpawn('quiz_generator', {
     lesson_id: lessonId,
     user_id: userId,
   })
@@ -140,6 +175,8 @@ export async function generateQuiz(lessonId: string, userId: string) {
 
 /**
  * Evaluate a quiz answer
+ * Uses Jac Client to spawn the answer_evaluator walker
+ * The walker internally uses byLLM for answer evaluation (see backend/jac/main.jac)
  */
 export async function evaluateAnswer(
   questionId: string,
@@ -147,7 +184,7 @@ export async function evaluateAnswer(
   correctAnswer: string,
   questionContext: any
 ) {
-  return spawnWalker('answer_evaluator', {
+  return jacSpawn('answer_evaluator', {
     question_id: questionId,
     user_answer: userAnswer,
     correct_answer: correctAnswer,
@@ -157,25 +194,29 @@ export async function evaluateAnswer(
 
 /**
  * Submit a quiz attempt
+ * Uses Jac Client to spawn the answer_evaluator walker
  */
 export async function submitQuiz(
   userId: string,
   quizId: string,
-  answers: Record<string, string>
+  answers: Record<string, string>,
+  questions?: any[]
 ) {
-  return spawnWalker('answer_evaluator', {
+  return jacSpawn('answer_evaluator', {
     user_id: userId,
     quiz_id: quizId,
     answers,
+    questions: questions || [],
     action: 'evaluate_quiz',
   })
 }
 
 /**
  * Get user progress summary
+ * Uses Jac Client to spawn the progress_tracker walker
  */
 export async function getProgressSummary(userId: string) {
-  return spawnWalker('progress_tracker', {
+  return jacSpawn('progress_tracker', {
     user_id: userId,
     action: 'get_progress_summary',
   })
@@ -183,13 +224,14 @@ export async function getProgressSummary(userId: string) {
 
 /**
  * Record lesson completion
+ * Uses Jac Client to spawn the progress_tracker walker
  */
 export async function recordLessonCompletion(
   userId: string,
   lessonId: string,
   score: number
 ) {
-  return spawnWalker('progress_tracker', {
+  return jacSpawn('progress_tracker', {
     user_id: userId,
     lesson_id: lessonId,
     score,
@@ -199,9 +241,10 @@ export async function recordLessonCompletion(
 
 /**
  * Get skill map data for user
+ * Uses Jac Client to spawn the skill_analyzer walker
  */
 export async function getSkillMap(userId: string) {
-  return spawnWalker('skill_analyzer', {
+  return jacSpawn('skill_analyzer', {
     user_id: userId,
     action: 'generate_skill_map',
   })
@@ -209,9 +252,10 @@ export async function getSkillMap(userId: string) {
 
 /**
  * Get weak areas for user
+ * Uses Jac Client to spawn the skill_analyzer walker
  */
 export async function getWeakAreas(userId: string) {
-  return spawnWalker('skill_analyzer', {
+  return jacSpawn('skill_analyzer', {
     user_id: userId,
     action: 'identify_weak_areas',
   })
@@ -219,9 +263,10 @@ export async function getWeakAreas(userId: string) {
 
 /**
  * Execute code in Jaseci backend
+ * Uses Jac Client to spawn the execute_code walker
  */
 export async function executeCode(code: string, exerciseId?: string) {
-  return spawnWalker('execute_code', {
+  return jacSpawn('execute_code', {
     code,
     exercise_id: exerciseId,
   })

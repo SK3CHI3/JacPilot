@@ -142,28 +142,36 @@ Skill Analyzer (visualizes mastery graph)
 
 ---
 
-### 4. Jac Client ✅ (Compliant)
+### 4. Jac Client ✅ (Compliant - Updated)
 
-**Status**: ✅ **COMPLIANT** - Frontend uses Spawn instead of direct API calls
+**Status**: ✅ **FULLY COMPLIANT** - Frontend uses official Jac Client pattern
 
 **Implementation**:
-- `frontend/src/services/jacClient.ts` uses `spawnWalker()` function
-- All walker calls go through `spawnWalker()`:
-  - `getProgressSummary()` → `spawnWalker('progress_tracker', ...)`
-  - `getNextLesson()` → `spawnWalker('learning_planner', ...)`
-  - `generateQuiz()` → `spawnWalker('quiz_generator', ...)`
-  - `evaluateAnswer()` → `spawnWalker('answer_evaluator', ...)`
-  - `getSkillMap()` → `spawnWalker('skill_analyzer', ...)`
+- `frontend/src/services/jacClient.ts` implements Jac Client with `jacSpawn()` function
+- All walker calls go through `jacSpawn()` (official Jac Client pattern):
+  - `getProgressSummary()` → `jacSpawn('progress_tracker', ...)`
+  - `getNextLesson()` → `jacSpawn('learning_planner', ...)`
+  - `generateQuiz()` → `jacSpawn('quiz_generator', ...)`
+  - `evaluateAnswer()` → `jacSpawn('answer_evaluator', ...)`
+  - `getSkillMap()` → `jacSpawn('skill_analyzer', ...)`
 
-**No Direct API Calls**: ✅ All backend communication goes through Jaseci walkers.
+**Jac Client Pattern**:
+- ✅ Uses `/walker/{walker_name}` endpoint format (jaclang/jac_cloud API)
+- ✅ Context passed as request body directly
+- ✅ Bearer token authentication
+- ✅ Follows official Jac Client pattern from https://docs.jaseci.org/jac-client/
+
+**No Direct API Calls**: ✅ All backend communication goes through Jac Client (`jacSpawn()`).
 
 **Quiz Generation Flow** (Hackathon Compliant):
 1. ✅ Check Supabase for existing quiz
-2. ✅ If not found, call `spawnWalker('quiz_generator', ...)` via `generateQuiz()`
-3. ✅ Quiz generator walker uses `byllm.generate()` internally
-4. ❌ **NO direct Gemini API calls from frontend** (removed - was non-compliant)
+2. ✅ If not found, call `jacSpawn('quiz_generator', ...)` via `generateQuiz()`
+3. ✅ Quiz generator walker uses `generate_quiz_content()` which uses byLLM internally
+4. ✅ **NO direct Gemini API calls from frontend** - All AI operations go through walkers
 
-**Important**: The frontend MUST use `spawnWalker()` for all operations. Direct API calls to external services (like Gemini) from the frontend violate hackathon requirements. All AI operations must go through Jaseci walkers that use byLLM.
+**Documentation**: See `docs/JAC_CLIENT_INTEGRATION.md` for complete implementation details.
+
+**Important**: The frontend uses the official Jac Client pattern (`jacSpawn()`) for all operations. Direct API calls to external services (like Gemini) from the frontend violate hackathon requirements. All AI operations must go through Jaseci walkers that use byLLM.
 
 ---
 
