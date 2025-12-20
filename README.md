@@ -1,6 +1,24 @@
 # JacPilot - Interactive Learning Platform for Jaseci
 
-A modern, gamified learning platform for mastering the Jac programming language and Jaseci framework. Built with React, TypeScript, Jaseci, and Supabase.
+A modern, gamified learning platform for mastering the Jac programming language and Jaseci framework. Built with React, TypeScript, **Jac Client**, and **byLLM**.
+
+## 🏆 Jaseci Hackathon Compliance
+
+This project fully implements the **mandatory Jaseci stack components**:
+
+### ✅ Jac Client (Mandatory)
+- **Frontend-backend communication uses Jac Client** (`jacSpawn` pattern)
+- All API calls go through `/walker/{walker_name}` endpoints
+- See `frontend/src/services/jacClient.ts` for implementation
+- Documentation: [Official Jac Client Docs](https://docs.jaseci.org/jac-client/)
+
+### ✅ byLLM (Mandatory)  
+- **Quiz generation** uses byLLM with Gemini AI (generative)
+- **Answer evaluation** uses byLLM with Gemini AI (analytical)
+- **Personalized feedback** generated via byLLM
+- See `backend/jac/main.jac` for byLLM integration
+
+All walkers are invoked via **Jac Client** from the frontend, and AI-powered walkers use **byLLM** for intelligence.
 
 ## 🎯 Features
 
@@ -14,16 +32,21 @@ A modern, gamified learning platform for mastering the Jac programming language 
 ## 🏗️ Architecture
 
 ```
-Frontend (React + TypeScript + Jac Client)
+Frontend (React + TypeScript + Jac Client) ← MANDATORY STACK
     ↓ jacSpawn() calls via Jac Client
-Backend (Jaseci + OSP + byLLM)
+Backend (Jaseci + Jac + byLLM) ← MANDATORY STACK
     ↓ Graph operations    ↓ Data persistence
 OSP Graph              Supabase
 ```
 
 **Key Technologies:**
-- **Jac Client**: Frontend-backend communication (mandatory Jaseci stack component)
-- **byLLM**: AI integration for quiz generation and answer evaluation
+- **Jac Client** ✅ - Frontend-backend communication (MANDATORY Jaseci component)
+  - All API calls use `jacSpawn()` function
+  - Implements official `/walker/{walker_name}` pattern
+- **byLLM** ✅ - AI integration (MANDATORY Jaseci component)
+  - Quiz generation (generative AI)
+  - Answer evaluation (analytical AI)
+  - Personalized feedback
 - **OSP Graph**: Graph-based learning path and mastery tracking
 - **Supabase**: Data persistence layer
 
@@ -134,13 +157,26 @@ JacPilot/
 
 ## 🤖 Agents (Walkers)
 
-1. **Learning Planner** - Recommends next lessons based on mastery
-2. **Quiz Generator** - Creates adaptive quizzes using byLLM (Gemini AI)
-3. **Answer Evaluator** - Evaluates quiz answers with AI-powered feedback
-4. **Progress Tracker** - Tracks user progress and statistics
-5. **Skill Analyzer** - Analyzes mastery graph for skill map
+All walkers are invoked via **Jac Client** (`jacSpawn`) from the frontend:
 
-All walkers use **byLLM** for AI integration with Google's Gemini models.
+1. **Learning Planner** - Recommends next lessons based on mastery
+   - Invoked: `jacSpawn('learning_planner', {...})`
+   
+2. **Quiz Generator** ✅ **[Uses byLLM]** - Creates adaptive quizzes using Gemini AI
+   - Invoked: `jacSpawn('quiz_generator', {...})`
+   - byLLM: Generative AI for quiz content creation
+   
+3. **Answer Evaluator** ✅ **[Uses byLLM]** - Evaluates quiz answers with AI feedback
+   - Invoked: `jacSpawn('answer_evaluator', {...})`
+   - byLLM: Analytical AI for answer analysis and feedback
+   
+4. **Progress Tracker** - Tracks user progress and statistics
+   - Invoked: `jacSpawn('progress_tracker', {...})`
+   
+5. **Skill Analyzer** - Analyzes mastery graph for skill map
+   - Invoked: `jacSpawn('skill_analyzer', {...})`
+
+**All frontend-backend communication uses Jac Client** - see `frontend/src/services/jacClient.ts`
 
 ## 🎨 Design
 
@@ -174,8 +210,8 @@ All walkers use **byLLM** for AI integration with Google's Gemini models.
 See the `docs/` folder for detailed documentation:
 - `SETUP.md` - Complete setup guide
 - `QUICK_REFERENCE.md` - Quick reference guide
-- **`JAC_CLIENT_INTEGRATION.md`** - Jac Client implementation and usage (Hackathon requirement)
-- **`BYLLM_DEMONSTRATION.md`** - byLLM usage demonstration (Hackathon requirement)
+- **`JAC_CLIENT_INTEGRATION.md`** ✅ - Jac Client implementation (MANDATORY Hackathon component)
+- **`BYLLM_DEMONSTRATION.md`** ✅ - byLLM usage demonstration (MANDATORY Hackathon component)
 - `BYLLM_CONFIGURATION.md` - byLLM configuration guide
 - `HACKATHON_COMPLIANCE.md` - Hackathon compliance checklist
 - `PROJECT_PLAN.md` - Comprehensive project plan

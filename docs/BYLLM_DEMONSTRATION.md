@@ -1,30 +1,53 @@
-# byLLM Usage Demonstration
+# byLLM Usage Demonstration ✅ MANDATORY HACKATHON REQUIREMENT
 
-This document clearly demonstrates how byLLM is used in JacPilot for the Jaseci Hackathon.
+This document clearly demonstrates how **byLLM** is used in JacPilot for the Jaseci Hackathon.
+
+## ✅ Compliance Statement
+
+**JacPilot fully implements byLLM as the mandatory stack component for AI integration.**
+
+- ✅ **Generative AI**: Quiz content generation using byLLM + Gemini
+- ✅ **Analytical AI**: Answer evaluation and feedback using byLLM + Gemini
+- ✅ All AI features use byLLM (no direct API calls to LLMs)
+- ✅ Implementation: `backend/jac/main.jac` (lines 1-280)
 
 ## Overview
 
-byLLM is integrated into JacPilot for two primary use cases:
-1. **Generative AI**: Quiz content generation
-2. **Analytical AI**: Answer evaluation and feedback generation
+byLLM is **integrated throughout JacPilot** for two primary use cases:
+1. **Generative AI**: Quiz content generation (creating questions from lesson content)
+2. **Analytical AI**: Answer evaluation and personalized feedback generation
+
+**All AI functionality uses byLLM** - there are no direct calls to Gemini API, everything goes through byLLM.
 
 ## Implementation Location
 
-**Backend File**: `backend/jac/main.jac`
+**Backend File**: `backend/jac/main.jac` (280 lines)
 
-## 1. Generative Use: Quiz Generation
-
-### Configuration
+### byLLM Configuration (Lines 1-18)
 
 ```jac
+# ============================================================
+# byLLM Configuration for Gemini
+# ============================================================
+# Using byLLM with LiteLLM for Gemini integration
+# Requires GEMINI_API_KEY environment variable to be set
+# ============================================================
+
 # Import byLLM Model
 import from byllm.lib { Model }
 
-# Initialize global LLM instance
+# Initialize global LLM instance with Gemini
 glob llm = Model(model_name="gemini/gemini-2.5-flash");
 
-# Define function using byLLM (generative use)
+# ============================================================
+# byLLM Function Definitions (Generative & Analytical)
+# ============================================================
+
+# Generative: Generate quiz questions
 def generate_quiz_content(prompt: str) -> str by llm();
+
+# Analytical: Evaluate answers and provide feedback  
+def evaluate_answer_content(prompt: str) -> str by llm();
 ```
 
 ### Usage in Walker
