@@ -222,6 +222,8 @@ export default function QuizPage() {
     const correctCount = quizResults.correct_answers || 0
     const totalQuestions = quizResults.total_questions || 5
     const questionResults = quizResults.results || []
+    const needsRevision = quizResults.needs_revision || false
+    const weakConcepts = quizResults.weak_concepts || []
     
     return (
       <div className="min-h-screen bg-dark-bg py-8">
@@ -291,6 +293,37 @@ export default function QuizPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Revision Prompt */}
+            {needsRevision && (
+              <div className="mb-8 p-6 rounded-lg border-2 border-orange-500 bg-orange-50">
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">📚</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: '#FF6B35' }}>
+                      Revision Recommended
+                    </h3>
+                    <p className="text-gray-700 mb-3">
+                      Your score is below 70%. Consider reviewing these concepts before moving forward:
+                    </p>
+                    {weakConcepts.length > 0 && (
+                      <ul className="list-disc list-inside text-gray-600 space-y-1">
+                        {weakConcepts.slice(0, 3).map((concept: string, idx: number) => (
+                          <li key={idx}>{concept}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <button
+                      onClick={() => navigate('/lessons')}
+                      className="mt-4 px-4 py-2 rounded-lg font-semibold text-white text-sm"
+                      style={{ background: '#FF6B35' }}
+                    >
+                      Review Lessons
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

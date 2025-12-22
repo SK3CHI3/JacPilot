@@ -95,23 +95,59 @@ walker learning_planner {
             # TODO: HTTP calls disabled - using placeholder
             lessons_response = None;
             
-            # Default to first lesson
-            next_lesson_id = "lesson-1";
-            next_title = "Introduction to Jaseci & Jac";
-            next_estimated_time = 15;
+            # Adaptive learning logic: Check prerequisites and mastery
+            # In production, this would:
+            # 1. Traverse OSP graph: user -> mastery -> concept
+            # 2. Check prerequisite edges: concept -> concept
+            # 3. Find lessons covering concepts with met prerequisites
+            # 4. Use byLLM to recommend personalized next lesson
             
-            # TODO: Uncomment when HTTP helper is integrated
-            # if (lessons_response != None && lessons_response.get("status_code") == 200) {
-            #     lessons_data = lessons_response.get("body");
-            #     ...
-            # }
+            # For now, use intelligent defaults based on completed lessons
+            user_id_val = self.user_id if hasattr(self, "user_id") else "";
+            
+            # Determine next lesson based on progress
+            if (len(completed_lesson_ids) == 0) {
+                # First lesson - no prerequisites
+                next_lesson_id = "lesson-1";
+                next_title = "Introduction to Jaseci & Jac";
+                next_estimated_time = 15;
+                reason = "Starting your learning journey";
+            } elif (len(completed_lesson_ids) < 5) {
+                # Early lessons - continue sequence
+                next_lesson_id = "lesson-" + str(len(completed_lesson_ids) + 1);
+                next_title = "Jaseci Core Concepts";
+                next_estimated_time = 20;
+                reason = "Building on your progress";
+            } else {
+                # Advanced - suggest based on mastery
+                next_lesson_id = "lesson-" + str(len(completed_lesson_ids) + 1);
+                next_title = "Advanced Jaseci Topics";
+                next_estimated_time = 30;
+                reason = "Ready for advanced concepts";
+            }
+            
+            # Use byLLM to generate personalized recommendation message
+            recommendation_prompt = f"User has completed {len(completed_lesson_ids)} lessons. Suggest what they should learn next in Jaseci programming (1 sentence).";
+            try {
+                ai_recommendation = evaluate_answer_content(recommendation_prompt);
+                if (ai_recommendation) {
+                    reason = str(ai_recommendation).strip();
+                    # Clean up if wrapped in quotes or JSON
+                    if (reason.startswith('"') and reason.endswith('"')) {
+                        reason = reason[1:-1];
+                    }
+                }
+            } catch {
+                # Fallback to default reason if byLLM fails
+            }
             
             report {
                 "success": True,
                 "lesson_id": next_lesson_id if next_lesson_id else "lesson-1",
                 "title": next_title,
-                "reason": "Next lesson in sequence",
-                "estimated_time": next_estimated_time
+                "reason": reason,
+                "estimated_time": next_estimated_time,
+                "completed_count": len(completed_lesson_ids)
             };
         } else {
             report {
@@ -138,11 +174,29 @@ walker quiz_generator {
         lesson_title_val = self.lesson_title if hasattr(self, "lesson_title") else "";
         lesson_content_val = self.lesson_content if hasattr(self, "lesson_content") else "";
         
-        # Calculate difficulty based on user mastery (placeholder for now)
-        difficulty = 2;
-        
         # Use instance concepts safely
         concepts_list = self.concepts if hasattr(self, "concepts") else [];
+        
+        # Calculate adaptive difficulty based on user mastery
+        # Default to medium difficulty
+        difficulty = 2;
+        avg_proficiency = 0.5;
+        
+        # Try to calculate average proficiency for lesson concepts
+        # In production, this would query mastery nodes from OSP graph
+        # For now, we use a simplified approach that can be enhanced
+        if (user_id_val != "" && concepts_list != None && len(concepts_list) > 0) {
+            # Count concepts to determine base difficulty
+            concept_count = len(concepts_list);
+            # More concepts = slightly harder
+            if (concept_count > 5) {
+                difficulty = 3;
+            } elif (concept_count > 3) {
+                difficulty = 2;
+            } else {
+                difficulty = 1;
+            }
+        }
         
         # Build topics list for byLLM
         topics_list = [];
@@ -269,11 +323,20 @@ walker answer_evaluator {
             # Calculate final score
             final_score = correct_count / total_questions if total_questions > 0 else 0;
             
+            # Detect if revision is needed (score < 70%)
+            needs_revision = final_score < 0.7;
+            weak_concepts = [];
+            
             # Generate detailed AI feedback based on performance
             wrong_questions = [];
             for result in results {
                 if (not result.get("is_correct", False)) {
                     wrong_questions.append(result.get("question", ""));
+                    # Extract concept from question if available
+                    question_text = result.get("question", "");
+                    if (question_text != "") {
+                        weak_concepts.append(question_text);
+                    }
                 }
             }
             
@@ -303,7 +366,9 @@ walker answer_evaluator {
                 "total_questions": total_questions,
                 "correct_answers": correct_count,
                 "results": results,
-                "feedback": feedback_text
+                "feedback": feedback_text,
+                "needs_revision": needs_revision,
+                "weak_concepts": weak_concepts
             };
         } else {
             report {
