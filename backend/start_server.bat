@@ -6,15 +6,13 @@ REM Add Python scripts to PATH
 set PATH=%PATH%;C:\Users\vomol\AppData\Roaming\Python\Python313\Scripts
 
 REM Set GEMINI_API_KEY for byLLM integration
+REM IMPORTANT: Set this in environment or .env file - DO NOT hardcode keys!
 if "%GEMINI_API_KEY%"=="" (
-    set GEMINI_API_KEY=AIzaSyCH5gYFaTRPkCvI92Rlp--TgVgdR9aW-C0
-    echo Using GEMINI_API_KEY from script
+    echo WARNING: GEMINI_API_KEY not set! byLLM features will not work.
+    echo Please set GEMINI_API_KEY environment variable or add it to .env file
 ) else (
     echo Using GEMINI_API_KEY from environment
 )
-
-REM Set TOKEN_SECRET for JWT authentication
-set TOKEN_SECRET=secret
 
 REM Set CORS environment variables (jac_cloud reads these)
 set ALLOW_ORIGINS=*

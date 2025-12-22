@@ -20,8 +20,8 @@ import type { WalkerResponse } from '../types'
 
 // Configuration - will be set via environment variables
 const JASECI_API_URL = import.meta.env.VITE_JASECI_API_URL || 'http://localhost:8000'
-// Read from .env file, with fallback to a fresh token
-const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluLXVzZXIiLCJlbWFpbCI6ImFkbWluQGphY3BpbG90LmNvbSIsInJvb3RfaWQiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJpc19hY3RpdmF0ZWQiOnRydWUsImlzX2FkbWluIjp0cnVlLCJleHBpcmF0aW9uIjoxNzk3Njg3OTE5LCJzdGF0ZSI6ImFjdGl2ZSJ9.xFdKzRvXvcFBFz4X2UX65nGS517_P28q6EI404-GUVI'
+// Get API key from environment - DO NOT hardcode tokens!
+const JASECI_API_KEY = import.meta.env.VITE_JASECI_API_KEY || ''
 
 // Debug: Log if API key is missing (only in dev)
 if (import.meta.env.DEV && !JASECI_API_KEY) {
@@ -68,6 +68,16 @@ export async function jacSpawn<T = any>(
       'Authorization': `Bearer ${JASECI_API_KEY}`,
     }
     
+    // Debug log in development (never log full token!)
+    if (import.meta.env.DEV) {
+      const tokenPreview = JASECI_API_KEY ? `${JASECI_API_KEY.substring(0, 20)}...` : 'MISSING'
+      console.log(`[jacClient] Calling walker: ${walkerName}`, {
+        url: endpoint,
+        hasAuth: !!JASECI_API_KEY,
+        tokenLength: JASECI_API_KEY?.length || 0,
+        tokenPreview: tokenPreview
+      })
+    }
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -199,14 +209,12 @@ export async function evaluateAnswer(
 export async function submitQuiz(
   userId: string,
   quizId: string,
-  answers: Record<string, string>,
-  questions?: any[]
+  answers: Record<string, string>
 ) {
   return jacSpawn('answer_evaluator', {
     user_id: userId,
     quiz_id: quizId,
     answers,
-    questions: questions || [],
     action: 'evaluate_quiz',
   })
 }

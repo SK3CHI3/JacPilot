@@ -13,7 +13,10 @@ app = Flask(__name__)
 CORS(app)
 
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://lrqtbfnpuzetqcvphycz.supabase.co')
-SUPABASE_KEY = os.getenv('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxycXRiZm5wdXpldHFjdnBoeWN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1NDk5ODIsImV4cCI6MjA3OTEyNTk4Mn0.J4TGZrHpTYwLz64MUT6zQtXM114PoUsaGVii6Hbmw7Q')
+# Get Supabase keys from environment - DO NOT hardcode keys!
+SUPABASE_KEY = os.getenv('SUPABASE_ANON_KEY', '')
+if not SUPABASE_KEY:
+    print("WARNING: SUPABASE_ANON_KEY not set in environment. Supabase features will not work.")
 
 @app.route('/health', methods=['GET'])
 def health():

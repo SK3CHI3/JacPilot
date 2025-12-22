@@ -126,20 +126,8 @@ walker learning_planner {
                 reason = "Ready for advanced concepts";
             }
             
-            # Use byLLM to generate personalized recommendation message
-            recommendation_prompt = f"User has completed {len(completed_lesson_ids)} lessons. Suggest what they should learn next in Jaseci programming (1 sentence).";
-            try {
-                ai_recommendation = evaluate_answer_content(recommendation_prompt);
-                if (ai_recommendation) {
-                    reason = str(ai_recommendation).strip();
-                    # Clean up if wrapped in quotes or JSON
-                    if (reason.startswith('"') and reason.endswith('"')) {
-                        reason = reason[1:-1];
-                    }
-                }
-            } catch {
-                # Fallback to default reason if byLLM fails
-            }
+            # Note: byLLM recommendation removed to avoid API key dependency
+            # The reason is already set above based on progress
             
             report {
                 "success": True,

@@ -20,10 +20,12 @@ if errorlevel 1 (
 REM Navigate to helpers directory
 cd helpers
 
-REM Set GEMINI_API_KEY - use environment variable or default
+REM Set GEMINI_API_KEY - use environment variable
+REM IMPORTANT: Set this in environment or .env file - DO NOT hardcode keys!
 if "%GEMINI_API_KEY%"=="" (
-    set GEMINI_API_KEY=AIzaSyCH5gYFaTRPkCvI92Rlp--TgVgdR9aW-C0
-    echo Using GEMINI_API_KEY from script
+    echo ERROR: GEMINI_API_KEY not set! Please set it in environment or .env file
+    pause
+    exit /b 1
 ) else (
     echo Using GEMINI_API_KEY from environment
 )

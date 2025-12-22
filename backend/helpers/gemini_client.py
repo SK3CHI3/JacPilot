@@ -8,8 +8,8 @@ import json
 import requests
 from typing import Dict, Any, Optional
 
-# Get API key from environment, with fallback
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '') or 'AIzaSyCH5gYFaTRPkCvI92Rlp--TgVgdR9aW-C0'
+# Get API key from environment - DO NOT hardcode keys!
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 # Use v1beta API with gemini-2.5-flash (available for free API keys)
 GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
