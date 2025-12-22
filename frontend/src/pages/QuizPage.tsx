@@ -149,8 +149,8 @@ export default function QuizPage() {
 
     setSubmitting(true)
     try {
-      // Pass questions along with answers for evaluation
-      const response = await submitQuiz(user.id, quiz.id, answers, quiz.questions)
+      // Submit quiz for evaluation
+      const response = await submitQuiz(user.id, quiz.id, answers)
       
       if (response.success) {
         // Extract results from response
